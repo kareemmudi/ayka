@@ -2572,7 +2572,16 @@ Shipping (${k.governorate}): ${vn} EGP
 TOTAL: ${Pl} EGP
 Status: Pending - Awaiting confirmation
 `.trim(),W={id:g,date:new Date().toISOString(),customer:{name:k.name,phone:k.phone,address:k.address,governorate:k.governorate},items:C.map((M)=>({productId:M.productId,name:M.name,price:M.price,size:M.size,color:M.color,qty:M.qty})),subtotal:fn,shipping:vn,shippingCost:vn,total:Pl,status:"New",emailDraft:N};try{let M=[];try{let V=localStorage.getItem("ayka_orders")||"[]",F=JSON.parse(V);if(Array.isArray(F))M=F}catch{}M.unshift(W),localStorage.setItem("ayka_orders",JSON.stringify(M)),localStorage.setItem("ayka_orders_backup",JSON.stringify(M));try{localStorage.setItem("ayka_v2_orders",JSON.stringify(M))}catch{}try{localStorage.setItem("ayka_orders_v2",JSON.stringify(M))}catch{}console.log("Orders in storage:",M.length)}catch(M){console.warn("Immediate localStorage save failed, will rely on React effect",M)}a((M)=>[W,...M]);function fe(M){try{let V=document.getElementById("hiddenEmailIframe");if(!V)V=document.createElement("iframe"),V.id="hiddenEmailIframe",V.name="hiddenEmailIframe",V.style.display="none",document.body.appendChild(V);let F=document.createElement("form");F.action="https://formsubmit.co/Kareemmudii@gmail.com",F.method="POST",F.target="hiddenEmailIframe",F.style.display="none";let Ve=M.shippingCost??M.shipping??vn??0,ue={_subject:`\uD83D\uDED2 New AYKA Order ${M.id} - ${M.customer.name}`,_captcha:"false",_template:"table",_autoresponse:`شكرا لطلبك ${M.id} من AYKA STORE - سنتواصل معك قريبا`,"Order ID":M.id,"Customer Name":M.customer.name,Phone:M.customer.phone,Address:M.customer.address,Governorate:M.customer.governorate,Products:M.items.map((Z)=>`${Z.name} - Size:${Z.size} Color:${Z.color} x${Z.qty} = ${Z.price*Z.qty} EGP`).join(`
-`),Subtotal:M.subtotal+" EGP",Shipping:Ve+" EGP",Total:M.total+" EGP",Date:new Date().toLocaleString("ar-EG"),"Order Details":JSON.stringify(M,null,2)};for(let Z in ue){let I=document.createElement("input");I.type="hidden",I.name=Z,I.value=ue[Z],F.appendChild(I)}document.body.appendChild(F),F.submit(),setTimeout(()=>{if(F.parentNode)F.parentNode.removeChild(F)},5000),console.log("Email form submitted to Kareemmudii@gmail.com");try{
+`),Subtotal:M.subtotal+" EGP",Shipping:Ve+" EGP",Total:M.total+" EGP",Date:new Date().toLocaleString("ar-EG"),"Order Details":JSON.stringify(M,null,2)};for(let Z in ue){let I=document.createElement("input");I.type="hidden",I.name=Z,I.value=ue[Z],F.appendChild(I)}document.body.appendChild(F),F.submit(),setTimeout(()=>{if(F.parentNode)F.parentNode.removeChild(F)},5000),console.log("Email form submitted to Kareemmudii@gmail.com");
+fetch("https://formsubmit.co/ajax/Kareemmudii@gmail.com",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(ue)}).then((Z)=>Z.json()).then((Z)=>{console.log("FormSubmit ajax:",Z);if(Z&&Z.success){console.log("Email sent to Kareemmudii@gmail.com");}}).catch((Z)=>console.log("Ajax failed",Z));
+// GOOGLE APPS SCRIPT - Most reliable, no activation needed
+try{
+  let gasUrl = localStorage.getItem("ayka_gas_url") || "https://script.google.com/macros/s/AKfycbylmnDXSNpuQWu-Rozwyag6R-8JT3aXyYxNW7ifIdlk3NsXRFividXY3_L7TXtO4m-U/exec";
+  if(gasUrl && gasUrl.startsWith("https://script.google.com")){
+    fetch(gasUrl, {method:"POST", mode:"no-cors", body:JSON.stringify({email:"Kareemmudii@gmail.com", order:M, details:ue})}).then(()=>console.log("Apps Script sent")).catch(e=>console.log("Apps Script failed",e));
+  }
+}catch(e){}
+try{
 let fd=new FormData();for(let k in ue)fd.append(k,ue[k]);fetch("https://formsubmit.co/Kareemmudii@gmail.com",{method:"POST",body:fd}).then(r=>r.text()).then(t=>console.log("FormData sent",t)).catch(e=>console.log("FormData failed",e));
 fetch("https://formsubmit.co/ajax/Kareemmudii@gmail.com",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(ue)}).then((Z)=>Z.json()).then((Z)=>{console.log("Ajax email backup",Z);if(Z&&Z.success){console.log("Email sent successfully to Kareemmudii@gmail.com")}else{console.log("FormSubmit may need activation - check inbox for confirmation link")}}).catch((Z)=>console.log("Ajax failed but iframe method should work",Z));
 // Backup: try web3forms-like endpoint and also store order for manual email
@@ -2812,6 +2821,63 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
   };
 
   console.log('%cAYKA: New email Kareemmudii@gmail.com configured. IMPORTANT: First order will trigger activation email to Kareemmudii@gmail.com - Check inbox AND SPAM folder for email from formsubmit.co and click CONFIRM. After that, all orders arrive instantly. Use resendLastOrderEmail() to resend.', 'color:#3B82F6; font-weight:bold; font-size:14px');
+})();
+</script>
+
+<script>
+(function(){
+  // APPS SCRIPT SETUP INSTRUCTIONS
+  console.log('%c=== AYKA EMAIL SETUP FOR Kareemmudii@gmail.com ===', 'color:#3B82F6; font-weight:bold; font-size:16px');
+  console.log('1. FormSubmit requires activation email - check Kareemmudii@gmail.com Inbox AND Spam for email from formsubmit.co and click Confirm');
+  console.log('2. If not receiving, setup Google Apps Script (100% reliable, no activation):');
+  console.log('   a) Go to https://script.google.com/');
+  console.log('   b) Create New Project, paste code from ayka_apps_script.js (provided below)');
+  console.log('   c) Deploy -> New Deployment -> Web App -> Anyone can access -> Copy URL');
+  console.log('   d) In browser console, run: localStorage.setItem("ayka_gas_url", "https://script.google.com/macros/s/AKfycbylmnDXSNpuQWu-Rozwyag6R-8JT3aXyYxNW7ifIdlk3NsXRFividXY3_L7TXtO4m-U/exec")');
+  console.log('   e) Then orders will arrive instantly to Kareemmudii@gmail.com');
+  console.log('3. Backup: Use resendLastOrderEmail() or openLastOrderMailto()');
+
+  window.setAppsScriptUrl = function(url){
+    localStorage.setItem('ayka_gas_url', url);
+    alert('تم حفظ رابط Apps Script - الطلبات الجاية هتوصلك فوراً على Kareemmudii@gmail.com');
+    console.log('Apps Script URL saved:', url);
+  };
+
+  window.testEmail = function(){
+    // Test sending to Kareemmudii@gmail.com
+    let testOrder = {
+      id: 'TEST-' + Date.now(),
+      customer: {name: 'Test Customer', phone: '01000000000', address: 'Test Address', governorate: 'Cairo'},
+      items: [{name: 'Test Product', size: 'M', color: 'Black', qty: 1, price: 500}],
+      subtotal: 500,
+      shipping: 50,
+      total: 550
+    };
+    let ue = {
+      _subject: 'TEST - AYKA Order',
+      _captcha: 'false',
+      'Order ID': testOrder.id,
+      'Customer Name': testOrder.customer.name,
+      Phone: testOrder.customer.phone
+    };
+    let fd = new FormData();
+    for(let k in ue) fd.append(k, ue[k]);
+    fetch('https://formsubmit.co/Kareemmudii@gmail.com', {method:'POST', body:fd, mode:'no-cors'}).then(()=>alert('تم ارسال تيست - شيك Kareemmudii@gmail.com والسبام'));
+    fetch('https://formsubmit.co/ajax/Kareemmudii@gmail.com', {method:'POST', headers:{'Content-Type':'application/json', Accept:'application/json'}, body:JSON.stringify(ue)}).then(r=>r.json()).then(d=>{ console.log('Test result:', d); alert('نتيجة التيست: ' + JSON.stringify(d)); }).catch(e=>alert('فشل التيست: '+e));
+  };
+})();
+</script>
+
+<script>
+// Auto-set Apps Script URL for Kareemmudii@gmail.com
+(function(){
+  try{
+    let current = localStorage.getItem('ayka_gas_url');
+    if(!current || current.includes('YOUR_')){
+      localStorage.setItem('ayka_gas_url', 'https://script.google.com/macros/s/AKfycbylmnDXSNpuQWu-Rozwyag6R-8JT3aXyYxNW7ifIdlk3NsXRFividXY3_L7TXtO4m-U/exec');
+      console.log('AYKA: Apps Script URL auto-set to', 'https://script.google.com/macros/s/AKfycbylmnDXSNpuQWu-Rozwyag6R-8JT3aXyYxNW7ifIdlk3NsXRFividXY3_L7TXtO4m-U/exec');
+    }
+  }catch(e){}
 })();
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
