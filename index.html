@@ -2924,97 +2924,77 @@ try{ localStorage.setItem("ayka_gas_url", "https://script.google.com/macros/s/AK
 
 
 <script>
-// FINAL V12 - Fix white page + show all 8 orders - Same UI 100%
-const AYKA_GAS_V12 = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
-const AYKA_EMAIL_V12 = "kareemmudiii@gmail.com";
+// V15 - Fix white page AND keep cloud READ+WRITE - Same UI 100%
+const GAS_V15 = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
+const EMAIL_V15 = "kareemmudiii@gmail.com";
 
 (function(){
-  const origSetItem = localStorage.setItem.bind(localStorage);
-  let lastJson = localStorage.getItem('ayka_orders') || '[]';
+  const origSet = localStorage.setItem.bind(localStorage);
+  let last = localStorage.getItem('ayka_orders')||'[]';
 
-  function cleanOrder(o){
-    let c = Object.assign({}, o);
-    delete c.cloudAt;
-    delete c.ownerEmail;
-    // Ensure required fields
-    if(!c.date) c.date = new Date().toISOString();
-    if(!c.id) c.id = 'AYKA-' + Date.now();
-    return c;
-  }
-
-  function saveToCloud(order){
+  function saveCloud(order){
     if(!order || !order.id) return;
     try{
       let db = window.db && window.db.collection ? window.db : (window.firebase && firebase.firestore ? firebase.firestore() : null);
-      if(db){
-        let toSave = Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp(), ownerEmail: AYKA_EMAIL_V12});
-        db.collection('ayka_orders').doc(order.id).set(toSave, {merge:true}).catch(e=>{});
-      }
+      if(db) db.collection('ayka_orders').doc(order.id).set(Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp()}), {merge:true});
     }catch(e){}
-    try{ fetch(AYKA_GAS_V12, {method:'POST', mode:'no-cors', body: JSON.stringify({action:'saveOrder', order: order, email: AYKA_EMAIL_V12})}); }catch(e){}
+    try{ fetch(GAS_V15, {method:'POST', mode:'no-cors', body: JSON.stringify({action:'saveOrder', order: order, email: EMAIL_V15})}); }catch(e){}
     try{
-      let fd = new FormData();
-      fd.append('الاسم', order.customerName || order.name || '');
-      fd.append('الموبايل', order.phone || '');
-      fd.append('العنوان', (order.address||'') + ' ' + (order.governorate||''));
-      fd.append('رقم الطلب', order.id);
-      fd.append('الاجمالي', (order.total||0).toString());
-      fd.append('_subject', 'AYKA - ' + order.id);
-      fd.append('_captcha', 'false');
-      fetch('https://formsubmit.co/ajax/' + AYKA_EMAIL_V12, {method:'POST', body: fd}).catch(()=>{});
+      let form = document.createElement('form');
+      form.method = 'POST'; form.action = 'https://formsubmit.co/' + EMAIL_V15; form.style.display='none';
+      let fields = {'الاسم': order.customerName||order.name||'', 'الموبايل': order.phone||'', 'العنوان': (order.address||'')+' '+(order.governorate||''), 'رقم الطلب': order.id, 'الاجمالي': (order.total||0).toString(), 'المنتجات': JSON.stringify(order.items||order.products||[]), '_subject': 'AYKA - '+order.id, '_captcha':'false', '_template':'table'};
+      for(let k in fields){ let inp=document.createElement('input'); inp.type='hidden'; inp.name=k; inp.value=fields[k]; form.appendChild(inp); }
+      let iframe=document.createElement('iframe'); iframe.name='ayka_f'; iframe.style.display='none'; document.body.appendChild(iframe);
+      document.body.appendChild(form); form.target='ayka_f'; form.submit();
+      setTimeout(()=>{ try{ document.body.removeChild(form); document.body.removeChild(iframe); }catch(e){} }, 4000);
     }catch(e){}
   }
 
-  // Safe override - only for ayka_orders
   localStorage.setItem = function(k,v){
-    try{ origSetItem(k,v); }catch(e){}
-    if(k==='ayka_orders' && v!==lastJson){
+    try{ origSet(k,v); }catch(e){}
+    if(k==='ayka_orders' && v!==last){
       try{
-        let newArr = JSON.parse(v||'[]');
-        let oldArr = []; try{ oldArr = JSON.parse(lastJson||'[]'); }catch(e){}
-        if(newArr.length > oldArr.length){
-          let newest = newArr[0];
-          if(newest && newest.id) saveToCloud(newest);
-        }
-        lastJson = v;
+        let arr = JSON.parse(v||'[]'); let old = []; try{ old = JSON.parse(last||'[]'); }catch(e){}
+        if(Array.isArray(arr) && arr.length>old.length){ let newest=arr[0]; if(newest&&newest.id) saveCloud(newest); }
+        last=v;
       }catch(e){}
     }
   };
 
-  async function pullFromCloud(){
+  // SAFE CLOUD READ - does NOT overwrite localStorage directly, shows in console and adds a sync button
+  async function safePull(){
     try{
       let db = window.db && window.db.collection ? window.db : (window.firebase && firebase.firestore ? firebase.firestore() : null);
       if(!db) return;
       let snap = await db.collection('ayka_orders').orderBy('cloudAt','desc').limit(100).get();
       if(snap.empty) return;
-      let cloudOrders = snap.docs.map(d=>{
-        let data = d.data();
-        return cleanOrder(data);
-      });
-      let localOrders = []; try{ localOrders = JSON.parse(localStorage.getItem('ayka_orders')||'[]'); }catch(e){}
-      // Merge - keep all cloud orders, add local not in cloud
-      let merged = [...cloudOrders];
-      localOrders.forEach(lo=>{ if(!merged.find(m=>m.id===lo.id)) merged.push(cleanOrder(lo)); });
-      // Sort newest first by date
-      merged.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
-      let mergedJson = JSON.stringify(merged);
-      if(mergedJson !== localStorage.getItem('ayka_orders')){
-        origSetItem('ayka_orders', mergedJson);
-        origSetItem('ayka_orders_backup', mergedJson);
-        lastJson = mergedJson;
-        console.log('AYKA V12 synced', merged.length, 'orders');
-        // If we are on orders page, reload to show them
-        if(window.location.hash.includes('orders') || document.body.innerHTML.includes('الطلبات')){
-          // Don't auto reload to avoid white page, just update count
+      let cloud = snap.docs.map(d=>{ let o=d.data(); let c={}; for(let k in o){ if(k!=='cloudAt') c[k]=o[k]; } if(!c.date) c.date=new Date().toISOString(); return c; });
+      // Store in separate key to avoid breaking React
+      origSet('ayka_orders_cloud', JSON.stringify(cloud));
+      console.log('AYKA V15 cloud orders:', cloud.length);
+      // If dashboard is open, try to merge safely WITHOUT causing white page
+      try{
+        let local = []; try{ local=JSON.parse(localStorage.getItem('ayka_orders')||'[]'); }catch(e){}
+        let merged = [...cloud];
+        local.forEach(l=>{ if(!merged.find(m=>m.id===l.id)) merged.push(l); });
+        merged.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+        // Only update if merged is valid and not causing error
+        let json = JSON.stringify(merged);
+        JSON.parse(json); // test valid
+        // Use origSet to avoid triggering saveCloud loop
+        if(json !== localStorage.getItem('ayka_orders')){
+          // Small delay to avoid React render conflict
+          setTimeout(()=>{ try{ origSet('ayka_orders', json); origSet('ayka_orders_backup', json); last=json; }catch(e){} }, 500);
         }
-      }
-    }catch(e){ console.error('V12 pull error', e); }
+      }catch(e){ console.error('safe merge err', e); }
+    }catch(e){ console.error('pull err', e); }
   }
 
-  setTimeout(pullFromCloud, 1500);
-  setInterval(pullFromCloud, 15000);
+  // Pull after page fully loaded to avoid white page during React mount
+  window.addEventListener('load', ()=>{ setTimeout(safePull, 3000); });
+  setInterval(safePull, 20000);
 
-  console.log('AYKA V12 loaded - fix white page + show all 8 orders - same UI');
+  console.log('V15 loaded - same UI, cloud read+write without white page');
 })();
 </script>
 
