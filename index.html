@@ -20,11 +20,10 @@
   font-family: "Optimistic Mono", ui-monospace, monospace;
 }
 </style>
-<!-- AYKA CLOUD PATCH - BEFORE REACT - DOES NOT TOUCH UI/THEME/COLORS/MUSIC/LANGUAGE -->
+<!-- AYKA MINIMAL CLOUD - ONLY SAVE - NO AUTO READ - NO WHITE PAGE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// ===== DO NOT TOUCH UI - ONLY CLOUD SYNC =====
 window.AYKA_GAS_URL = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
 window.AYKA_EMAIL = "kareemmudiii@gmail.com";
 try{
@@ -32,100 +31,102 @@ try{
     firebase.initializeApp({apiKey:"AIzaSyDHUz4jutb7Bx44RIrAWnX_fUdQJoQ7lH4",authDomain:"ayka-store.firebaseapp.com",projectId:"ayka-store",storageBucket:"ayka-store.firebasestorage.app",messagingSenderId:"651495721516",appId:"1:651495721516:web:543303c84e4b3a2ff45f89"});
   }
   window.AYKA_DB = firebase.firestore();
-}catch(e){ console.log("firebase init", e); }
+}catch(e){}
 
 (function(){
-  // 1) Early intercept localStorage.setItem for ayka_orders - this runs BEFORE React bundle
   const origSetItem = localStorage.setItem.bind(localStorage);
-  window.AYKA_ORDERS_CLOUD_SAVING = false;
+  let saving = false;
   localStorage.setItem = function(k, v){
     origSetItem(k, v);
-    if(k==="ayka_orders" && v && !window.AYKA_ORDERS_CLOUD_SAVING){
+    if(k==="ayka_orders" && v && !saving){
       try{
         let arr = JSON.parse(v);
-        if(Array.isArray(arr) && arr.length){
-          // find newest order (first one)
-          let newest = arr[0];
-          if(newest && newest.id && newest.id.startsWith("AYKA-")){
-            // Prevent duplicate send
-            let sentKey = "ayka_sent_"+newest.id;
-            if(localStorage.getItem(sentKey)) return;
-            localStorage.setItem(sentKey, "1");
-            // Cloud save + emails - async
-            (async()=>{
-              let db = window.AYKA_DB;
-              if(db){
-                try{ await db.collection("ayka_orders").doc(newest.id).set({...newest, cloudAt: firebase.firestore.FieldValue.serverTimestamp()}); console.log("AYKA cloud saved", newest.id);}catch(e){ console.log("cloud err", e);}
-              }
-              // GAS
-              try{ fetch(window.AYKA_GAS_URL, {method:"POST", mode:"no-cors", body: JSON.stringify({action:"saveOrder", order:newest, email:window.AYKA_EMAIL})}); console.log("AYKA GAS sent"); }catch(e){}
-              // FormSubmit via hidden form (works in Meta AI browser)
-              try{
-                let form=document.createElement("form"); form.method="POST"; form.action="https://formsubmit.co/"+window.AYKA_EMAIL; form.style.display="none";
-                let fields={"رقم الطلب":newest.id,"الاسم":newest.customerName||newest.name||"", "الموبايل":newest.phone||"", "العنوان":(newest.address||"")+" "+(newest.governorate||""), "الاجمالي":String(newest.total||""), "المنتجات":JSON.stringify(newest.items||newest.products||[]), "_subject":"AYKA - "+newest.id, "_captcha":"false", "_template":"table"};
-                for(let kk in fields){ let inp=document.createElement("input"); inp.type="hidden"; inp.name=kk; inp.value=fields[kk]; form.appendChild(inp); }
-                let ifr=document.createElement("iframe"); ifr.name="ayka_fs"; ifr.style.display="none"; document.body.appendChild(ifr);
-                document.body.appendChild(form); form.target="ayka_fs"; form.submit();
-                setTimeout(()=>{ try{ document.body.removeChild(form); document.body.removeChild(ifr);}catch(e){} },3000);
-                console.log("AYKA FormSubmit sent");
-              }catch(e){ console.log("formsubmit err", e);}
-            })();
-          }
-        }
+        if(!Array.isArray(arr) || !arr.length) return;
+        let newest = arr[0];
+        if(!newest || !newest.id || !String(newest.id).startsWith("AYKA-")) return;
+        let sentKey = "ayka_sent_"+newest.id;
+        if(localStorage.getItem(sentKey)) return;
+        localStorage.setItem(sentKey, "1");
+        // Save to Firebase - WITHOUT cloudAt timestamp to avoid white page
+        (async()=>{
+          try{
+            let db = window.AYKA_DB;
+            if(db){
+              // Remove any non-serializable fields
+              let clean = JSON.parse(JSON.stringify(newest));
+              await db.collection("ayka_orders").doc(clean.id).set({...clean, cloudAt: firebase.firestore.FieldValue.serverTimestamp(), savedAt: new Date().toISOString()});
+              console.log("AYKA cloud saved", clean.id);
+            }
+          }catch(e){ console.log("cloud save err", e); }
+          try{ fetch(window.AYKA_GAS_URL, {method:"POST", mode:"no-cors", body: JSON.stringify({action:"saveOrder", order:newest, email:window.AYKA_EMAIL})}); }catch(e){}
+          try{
+            let form=document.createElement("form"); form.method="POST"; form.action="https://formsubmit.co/"+window.AYKA_EMAIL; form.style.display="none";
+            let fields={"رقم الطلب":newest.id,"الاسم":newest.customerName||newest.name||"", "الموبايل":newest.phone||"", "العنوان":(newest.address||"")+" "+(newest.governorate||""), "الاجمالي":String(newest.total||""), "المنتجات":JSON.stringify(newest.items||newest.products||[]), "_subject":"AYKA - "+newest.id, "_captcha":"false", "_template":"table"};
+            for(let kk in fields){ let inp=document.createElement("input"); inp.type="hidden"; inp.name=kk; inp.value=fields[kk]; form.appendChild(inp); }
+            let ifr=document.createElement("iframe"); ifr.name="ayka_fs2"; ifr.style.display="none"; document.body.appendChild(ifr);
+            document.body.appendChild(form); form.target="ayka_fs2"; form.submit();
+            setTimeout(()=>{ try{ document.body.removeChild(form); document.body.removeChild(ifr);}catch(e){} },3000);
+          }catch(e){}
+        })();
       }catch(e){}
     }
   };
 
-  // 2) Cloud read - SAFE - only after 4 seconds, and with try-catch so NO white page
-  window.addEventListener("load", ()=>{
-    setTimeout(async()=>{
-      try{
-        let db = window.AYKA_DB;
-        if(!db) return;
-        let snap = await db.collection("ayka_orders").orderBy("cloudAt","desc").limit(80).get();
-        if(snap.empty) return;
-        let cloud = snap.docs.map(d=>d.data());
-        let localRaw = localStorage.getItem("ayka_orders");
-        let local = [];
-        try{ local = JSON.parse(localRaw||"[]"); }catch(e){ local=[]; }
-        // merge without breaking UI - keep local first but add cloud ones missing
-        let merged = [...local];
-        cloud.forEach(c=>{
-          if(!merged.find(m=>m.id===c.id)) merged.push(c);
-        });
-        // sort by date desc
-        merged.sort((a,b)=> (b.date||"").localeCompare(a.date||""));
-        // save only if different length
-        if(merged.length !== local.length){
-          window.AYKA_ORDERS_CLOUD_SAVING = true;
-          localStorage.setItem("ayka_orders", JSON.stringify(merged));
-          localStorage.setItem("ayka_orders_backup", JSON.stringify(merged));
-          window.AYKA_ORDERS_CLOUD_SAVING = false;
-          console.log("AYKA merged", local.length, "->", merged.length);
-          // dispatch storage event to let React update if listening
-          try{ window.dispatchEvent(new Event("storage")); window.dispatchEvent(new CustomEvent("ayka_orders_updated")); }catch(e){}
-        }
-      }catch(e){ console.log("AYKA cloud read err - ignored to avoid white page", e); }
-    }, 4000);
-  });
-
-  // 3) Also listen for manual refresh button
-  window.AYKA_refreshOrders = async()=>{
+  // Manual load function - only when user clicks button - NEVER auto
+  window.AYKA_loadCloudOrders = async()=>{
     try{
       let db = window.AYKA_DB;
+      if(!db){ alert("Firebase مش جاهز"); return; }
+      let btn = document.getElementById("ayka-load-btn");
+      if(btn) btn.textContent="جاري التحميل...";
       let snap = await db.collection("ayka_orders").orderBy("cloudAt","desc").limit(100).get();
-      let cloud = snap.docs.map(d=>d.data());
-      window.AYKA_ORDERS_CLOUD_SAVING = true;
-      localStorage.setItem("ayka_orders", JSON.stringify(cloud));
-      localStorage.setItem("ayka_orders_backup", JSON.stringify(cloud));
-      window.AYKA_ORDERS_CLOUD_SAVING = false;
-      alert("تم التحديث من السحابة: "+cloud.length+" طلب");
+      if(snap.empty){ alert("لا يوجد طلبات في السحابة"); if(btn) btn.textContent="تحميل من السحابة"; return; }
+      let cloud = snap.docs.map(d=>{
+        let data = d.data();
+        delete data.cloudAt; // remove timestamp to avoid white page
+        return data;
+      });
+      // Merge safely
+      let localRaw = localStorage.getItem("ayka_orders")||"[]";
+      let local = []; try{ local = JSON.parse(localRaw); }catch(e){ local=[]; }
+      let merged = [...local];
+      cloud.forEach(c=>{ if(c && c.id && !merged.find(m=>m.id===c.id)) merged.push(c); });
+      merged.sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+      saving = true;
+      localStorage.setItem("ayka_orders", JSON.stringify(merged));
+      localStorage.setItem("ayka_orders_backup", JSON.stringify(merged));
+      saving = false;
+      alert("تم تحميل "+cloud.length+" طلب من السحابة - الاجمالي "+merged.length);
       location.reload();
-    }catch(e){ alert("خطأ: "+e.message); }
+    }catch(e){ alert("خطأ: "+e.message); console.log(e); }
   };
+
+  // Inject button into orders page if exists
+  setInterval(()=>{
+    try{
+      // Find orders dashboard header - try multiple selectors
+      let headers = document.querySelectorAll("h1,h2,h3,div");
+      for(let h of headers){
+        if(h.textContent && (h.textContent.includes("الطلبات") || h.textContent.includes("لوحة") ) && h.textContent.length<50){
+          if(document.getElementById("ayka-load-btn")) break;
+          // Check if inside orders modal/dashboard
+          let parent = h.parentElement;
+          if(parent && parent.innerHTML.length<5000){
+            let btn = document.createElement("button");
+            btn.id="ayka-load-btn";
+            btn.textContent="☁️ تحميل من السحابة (يعرض على أي جهاز)";
+            btn.style="background:#fff;color:#000;padding:10px 14px;border-radius:10px;font-weight:900;border:none;margin:10px 0;cursor:pointer;width:100%";
+            btn.onclick = window.AYKA_loadCloudOrders;
+            parent.appendChild(btn);
+            break;
+          }
+        }
+      }
+    }catch(e){}
+  }, 2000);
 })();
 </script>
-<!-- END CLOUD PATCH -->
+<!-- END MINIMAL CLOUD -->
 <style>* { -webkit-text-size-adjust: 86.33333333333333% !important; }</style><style>
 @font-face {
   font-family: "Optimistic";
@@ -3030,24 +3031,31 @@ try{ localStorage.setItem("ayka_gas_url", "https://script.google.com/macros/s/AK
 </script>
 
 
-<style>#ayka-white-fix{display:none;position:fixed;inset:0;background:#000;z-index:99999;align-items:center;justify-content:center;flex-direction:column;padding:20px}#ayka-white-fix.show{display:flex}</style>
-<div id="ayka-white-fix"><h2 style="color:#fff">لو الصفحة بيضا - اضغط تحديث</h2><button onclick="window.AYKA_refreshOrders()" style="margin-top:12px;background:#fff;color:#000;padding:12px 20px;border-radius:12px;font-weight:900;border:none">تحديث الطلبات من السحابة</button><button onclick="location.reload()" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:12px">اعادة تحميل</button></div>
 <script>
-setTimeout(()=>{
-  // detect white page in orders dashboard: if body is white and has little content
-  let bodyText = (document.body.innerText||"").trim();
-  let isWhite = document.body && (bodyText.length<50 || document.documentElement.innerHTML.includes("ayka_orders") && bodyText.length<100);
-  // Only if url contains orders or user is in dashboard
-  if(isWhite && (location.href.includes("orders") || bodyText==="")){
-    // Check if orders exist in localStorage but not rendered
-    try{
-      let o = JSON.parse(localStorage.getItem("ayka_orders")||"[]");
-      if(o.length>0 && bodyText.length<100){
-        document.getElementById("ayka-white-fix").classList.add("show");
+// Inject cloud button next to Reload from localStorage
+function injectCloudButton(){
+  try{
+    let reloadBtn = null;
+    // find button with text Reload from localStorage
+    let btns = document.querySelectorAll("button");
+    for(let b of btns){
+      if(b.textContent && b.textContent.includes("Reload from localStorage")){
+        reloadBtn = b;
+        break;
       }
-    }catch(e){}
-  }
-}, 5000);
+    }
+    if(reloadBtn && !document.getElementById("ayka-cloud-btn")){
+      let cloudBtn = document.createElement("button");
+      cloudBtn.id = "ayka-cloud-btn";
+      cloudBtn.textContent = "☁️ تحميل من السحابة (كل الأجهزة)";
+      cloudBtn.style = "background:#fff;color:#000;padding:12px;border-radius:12px;font-weight:900;border:none;margin-top:10px;width:100%;cursor:pointer";
+      cloudBtn.onclick = ()=>{ window.AYKA_loadCloudOrders && window.AYKA_loadCloudOrders(); };
+      reloadBtn.parentNode.insertBefore(cloudBtn, reloadBtn.nextSibling);
+      console.log("AYKA cloud button injected");
+    }
+  }catch(e){ console.log(e); }
+}
+setInterval(injectCloudButton, 1500);
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
 </body></html>
