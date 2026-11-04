@@ -2923,70 +2923,85 @@ try{ localStorage.setItem("ayka_gas_url", "https://script.google.com/macros/s/AK
 </script>
 
 
-<!-- AYKA FIX - Orders + Email + Firebase Cloud Sync - SAME UI -->
 <script>
-// Fix email - use 3 i
-const AYKA_OWNER_EMAIL = "kareemmudiii@gmail.com";
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
+// FINAL FIX - Direct intercept - same UI
+const AYKA_GAS_FINAL = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
+const AYKA_EMAIL_FINAL = "kareemmudiii@gmail.com";
 
-// Override order save to ensure it works from any device and sends email
 (function(){
-  const origSet = localStorage.setItem.bind(localStorage);
-  
-  // دالة حفظ الطلب الكاملة
-  window.ayka_saveOrderEverywhere = function(order){
-    // 1- حفظ محلي
+  // Ensure Firebase is ready
+  function getDb(){
+    try{ 
+      if(window.db && window.db.collection) return window.db;
+      if(window.firebase && firebase.firestore) return firebase.firestore();
+      return null;
+    }catch(e){ return null; }
+  }
+
+  // Function to save order everywhere
+  window._ayka_final_save = function(order){
+    if(!order || !order.id) return;
+    console.log('AYKA saving order', order.id);
+    
+    // 1) Firebase
     try{
-      let orders = JSON.parse(localStorage.getItem('ayka_orders')||'[]');
-      orders.unshift(order);
-      origSet('ayka_orders', JSON.stringify(orders));
+      let db = getDb();
+      if(db){
+        let data = Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp(), ownerEmail: AYKA_EMAIL_FINAL});
+        db.collection('ayka_orders').doc(order.id).set(data, {merge:true}).then(()=>console.log('Firebase saved')).catch(e=>console.log('FB err', e));
+      }
     }catch(e){}
     
-    // 2- حفظ في Google Sheet + ارسال ايميل عبر Apps Script
+    // 2) GAS - for email + sheet
     try{
-      fetch(GAS_URL, {
+      fetch(AYKA_GAS_FINAL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action:'saveOrder', order: order, email: AYKA_OWNER_EMAIL})
-      }).catch(()=>{});
-      
-      // محاولة تانية بصيغة مختلفة
-      fetch(GAS_URL + '?action=saveOrder', {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify(order)
-      }).catch(()=>{});
-    }catch(e){ console.log('GAS error', e) }
+        body: JSON.stringify({action:'saveOrder', order: order, email: AYKA_EMAIL_FINAL})
+      });
+    }catch(e){}
     
-    // 3- حفظ في Firebase عشان يظهر على اي جهاز
+    // 3) FormSubmit backup for Gmail
     try{
-      if(window.db && window.db.collection){
-        window.db.collection('ayka_orders').doc(order.id).set(Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp()}));
-      } else if(window.firebase && firebase.firestore){
-        firebase.firestore().collection('ayka_orders').doc(order.id).set(Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp()}));
-      }
-    }catch(e){ console.log('Firebase error', e) }
-    
-    // 4- ارسال عبر FormSubmit كنسخة احتياطية للجيميل
-    try{
-      let formData = new FormData();
-      formData.append('الاسم', order.customer?.name || '');
-      formData.append('الموبايل', order.customer?.phone || '');
-      formData.append('العنوان', order.customer?.address || '' + ' - ' + (order.customer?.governorate||''));
-      formData.append('الطلب', JSON.stringify(order.items || []));
-      formData.append('الاجمالي', (order.subtotal||0)+(order.shipping||0));
-      formData.append('رقم الطلب', order.id);
-      formData.append('_subject', 'طلب جديد AYKA - ' + order.id);
-      formData.append('_captcha', 'false');
-      fetch('https://formsubmit.co/ajax/' + AYKA_OWNER_EMAIL, {
-        method: 'POST',
-        body: formData
-      }).catch(()=>{});
+      let fd = new FormData();
+      fd.append('الاسم', order.customer?.name || order.name || '');
+      fd.append('الموبايل', order.customer?.phone || order.phone || '');
+      fd.append('العنوان', (order.customer?.address||'') + ' ' + (order.customer?.governorate||''));
+      fd.append('رقم الطلب', order.id);
+      fd.append('المنتجات', JSON.stringify(order.items||order.products||[]));
+      fd.append('الاجمالي', (order.total||order.subtotal||'') + '');
+      fd.append('_subject', 'طلب جديد AYKA ' + order.id);
+      fd.append('_captcha', 'false');
+      fetch('https://formsubmit.co/ajax/' + AYKA_EMAIL_FINAL, {method:'POST', body: fd});
     }catch(e){}
   };
 
-  // مراقبة الطلبات الجديدة
+  // Intercept fetch to GAS
+  const origFetch = window.fetch;
+  window.fetch = function(url, opts){
+    try{
+      let urlStr = typeof url === 'string' ? url : url.url || '';
+      if(urlStr.includes('script.google.com/macros')){
+        // Try to extract order from body
+        let body = opts && opts.body ? opts.body : '';
+        if(typeof body === 'string' && body.includes('AYKA')){
+          try{
+            let j = JSON.parse(body);
+            let order = j.order || j;
+            if(order && order.id) window._ayka_final_save(order);
+          }catch(e){}
+        }
+        // Always replace with new GAS URL
+        if(!urlStr.includes('AKfycbwd3MwP00')){
+          url = AYKA_GAS_FINAL;
+          if(opts) opts.mode = 'no-cors';
+        }
+      }
+    }catch(e){}
+    return origFetch.apply(this, arguments);
+  };
+
+  // Watch localStorage for ayka_orders
   let lastLen = 0;
   try{ lastLen = JSON.parse(localStorage.getItem('ayka_orders')||'[]').length; }catch(e){}
   setInterval(()=>{
@@ -2994,13 +3009,14 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01Y
       let cur = JSON.parse(localStorage.getItem('ayka_orders')||'[]');
       if(cur.length > lastLen){
         let newOnes = cur.slice(0, cur.length - lastLen);
-        newOnes.forEach(o=>{ if(o && o.id) window.ayka_saveOrderEverywhere(o); });
+        newOnes.forEach(o=>{ if(o && o.id) window._ayka_final_save(o); });
       }
       lastLen = cur.length;
     }catch(e){}
-  }, 1000);
+  }, 1500);
 
-  console.log('AYKA order fix loaded - same UI, email to', AYKA_OWNER_EMAIL);
+  // Also watch for AYKA-XXXX keys that might be orders
+  console.log('AYKA final fix loaded - orders will go to Firebase + Gmail');
 })();
 </script>
 
