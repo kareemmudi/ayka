@@ -2924,75 +2924,79 @@ try{ localStorage.setItem("ayka_gas_url", "https://script.google.com/macros/s/AK
 
 
 <script>
-// BULLETPROOF - Same UI, guaranteed cloud save + 2 emails
-const AYKA_GAS_FINAL_V10 = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
-const AYKA_EMAIL_V10 = "kareemmudiii@gmail.com";
+// FINAL V11 - Same UI + Cloud READ & WRITE
+const AYKA_GAS_V11 = "https://script.google.com/macros/s/AKfycbwd3MwP00PkRV8O3hIhF01YQR6dgm6q4KAaqwx2VVyci34K7eiM88a5_DfBklo7QpE-/exec";
+const AYKA_EMAIL_V11 = "kareemmudiii@gmail.com";
 
 (function(){
   const origSetItem = localStorage.setItem.bind(localStorage);
-  let lastOrdersJson = localStorage.getItem('ayka_orders') || '[]';
-  
-  function saveOrderToCloud(order){
+  let lastJson = localStorage.getItem('ayka_orders') || '[]';
+
+  function saveToCloud(order){
     if(!order || !order.id) return;
-    console.log('AYKA V10 saving order', order.id);
-    
-    // Firebase
     try{
-      let db = null;
-      if(window.db && window.db.collection) db = window.db;
-      else if(window.firebase && firebase.firestore) db = firebase.firestore();
+      let db = window.db && window.db.collection ? window.db : (window.firebase && firebase.firestore ? firebase.firestore() : null);
       if(db){
-        db.collection('ayka_orders').doc(order.id).set(Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp(), ownerEmail: AYKA_EMAIL_V10}), {merge:true})
-          .then(()=>console.log('V10 Firebase saved'))
-          .catch(e=>console.error('V10 Firebase err', e));
+        db.collection('ayka_orders').doc(order.id).set(Object.assign({}, order, {cloudAt: firebase.firestore.FieldValue.serverTimestamp(), ownerEmail: AYKA_EMAIL_V11}), {merge:true});
       }
-    }catch(e){ console.error('FB err', e); }
-
-    // GAS - Google Sheet + Gmail
-    try{
-      fetch(AYKA_GAS_FINAL_V10, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify({action:'saveOrder', order: order, email: AYKA_EMAIL_V10})
-      });
     }catch(e){}
-
-    // FormSubmit - 2nd email backup
+    try{ fetch(AYKA_GAS_V11, {method:'POST', mode:'no-cors', body: JSON.stringify({action:'saveOrder', order: order, email: AYKA_EMAIL_V11})}); }catch(e){}
     try{
       let fd = new FormData();
       fd.append('الاسم', order.customerName || order.name || '');
       fd.append('الموبايل', order.phone || '');
       fd.append('العنوان', (order.address||'') + ' ' + (order.governorate||''));
       fd.append('رقم الطلب', order.id);
-      fd.append('المنتجات', JSON.stringify(order.items || order.products || []));
-      fd.append('الاجمالي', (order.total||order.subtotal||0).toString());
+      fd.append('الاجمالي', (order.total||0).toString());
       fd.append('_subject', 'AYKA - ' + order.id);
       fd.append('_captcha', 'false');
-      fetch('https://formsubmit.co/ajax/' + AYKA_EMAIL_V10, {method:'POST', body: fd})
-        .then(()=>console.log('V10 FormSubmit sent'))
-        .catch(()=>{});
+      fetch('https://formsubmit.co/ajax/' + AYKA_EMAIL_V11, {method:'POST', body: fd});
     }catch(e){}
   }
 
-  localStorage.setItem = function(key, value){
-    origSetItem(key, value);
+  localStorage.setItem = function(k,v){
+    origSetItem(k,v);
     try{
-      if(key === 'ayka_orders' && value && value !== lastOrdersJson){
-        let newOrders = JSON.parse(value);
-        let oldOrders = [];
-        try{ oldOrders = JSON.parse(lastOrdersJson); }catch(e){}
-        if(Array.isArray(newOrders) && newOrders.length > oldOrders.length){
-          let newOne = newOrders[0]; // newest is at front via unshift
-          if(newOne && newOne.id) saveOrderToCloud(newOne);
-        } else if(Array.isArray(newOrders) && newOrders.length === 1 && oldOrders.length === 0){
-          saveOrderToCloud(newOrders[0]);
+      if(k==='ayka_orders' && v!==lastJson){
+        let newArr = JSON.parse(v||'[]');
+        let oldArr = []; try{ oldArr = JSON.parse(lastJson||'[]'); }catch(e){}
+        if(newArr.length > oldArr.length){
+          let newest = newArr[0];
+          if(newest && newest.id) saveToCloud(newest);
         }
-        lastOrdersJson = value;
+        lastJson = v;
       }
-    }catch(e){ console.error('V10 intercept error', e); }
+    }catch(e){}
   };
 
-  console.log('AYKA V10 bulletproof loader - same UI, orders will go to Firebase + 2 emails to', AYKA_EMAIL_V10);
+  // CLOUD READ - Pull from Firebase and merge into localStorage so dashboard shows all
+  async function pullFromCloud(){
+    try{
+      let db = window.db && window.db.collection ? window.db : (window.firebase && firebase.firestore ? firebase.firestore() : null);
+      if(!db) return;
+      let snap = await db.collection('ayka_orders').orderBy('cloudAt','desc').limit(100).get();
+      if(snap.empty) return;
+      let cloudOrders = snap.docs.map(d=>d.data());
+      // Merge with local
+      let localOrders = []; try{ localOrders = JSON.parse(localStorage.getItem('ayka_orders')||'[]'); }catch(e){}
+      let merged = [...cloudOrders];
+      localOrders.forEach(lo=>{ if(!merged.find(m=>m.id===lo.id)) merged.push(lo); });
+      // Sort newest first
+      merged.sort((a,b)=> (b.date||b.cloudAt||'').localeCompare(a.date||a.cloudAt||''));
+      origSetItem('ayka_orders', JSON.stringify(merged));
+      origSetItem('ayka_orders_backup', JSON.stringify(merged));
+      lastJson = JSON.stringify(merged);
+      // Force React to re-read by dispatching storage event
+      try{ window.dispatchEvent(new StorageEvent('storage', {key:'ayka_orders', newValue: lastJson})); }catch(e){}
+      console.log('AYKA V11 pulled', cloudOrders.length, 'orders from Firebase');
+    }catch(e){ console.error('pull error', e); }
+  }
+
+  // Pull on load and every 10 seconds
+  setTimeout(pullFromCloud, 2000);
+  setInterval(pullFromCloud, 10000);
+
+  console.log('AYKA V11 loaded - same UI, cloud read+write');
 })();
 </script>
 
