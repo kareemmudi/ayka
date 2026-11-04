@@ -20,7 +20,65 @@
   font-family: "Optimistic Mono", ui-monospace, monospace;
 }
 </style>
-<!-- AYKA ULTIMATE - CLIENT AUTO SYNC NO CLICK + STOCK + PRODUCTS + ALL - NO WHITE PAGE -->
+<!-- AYKA FIX WHITE PAGE AT ROOT - CLEAN CORRUPTED ORDERS BEFORE REACT -->
+<script>
+(function(){
+  // 1 - Clean corrupted ayka_orders BEFORE React reads it - this is the white page cause
+  try{
+    let raw = localStorage.getItem('ayka_orders');
+    if(raw){
+      let arr = JSON.parse(raw);
+      if(!Array.isArray(arr)){
+        localStorage.setItem('ayka_orders','[]');
+        localStorage.setItem('ayka_orders_backup','[]');
+        console.log("AYKA cleaned - not array");
+      } else {
+        // Filter only valid orders and remove cloudAt Timestamp objects that cause crash
+        let cleaned = arr.filter(o=>{
+          if(!o || typeof o!=='object') return false;
+          if(!o.id || !String(o.id).startsWith('AYKA-')) return false;
+          return true;
+        }).map(o=>{
+          let c = {...o};
+          delete c.cloudAt; // remove Firestore timestamp that breaks React
+          delete c.cloud_at;
+          // Ensure required fields exist
+          if(!c.date) c.date = new Date().toISOString();
+          if(!c.status) c.status = 'new';
+          return c;
+        });
+        if(cleaned.length !== arr.length){
+          localStorage.setItem('ayka_orders', JSON.stringify(cleaned));
+          localStorage.setItem('ayka_orders_backup', JSON.stringify(cleaned));
+          console.log("AYKA cleaned", arr.length, "->", cleaned.length);
+        }
+      }
+    }
+  }catch(e){
+    // If parse fails - corrupted JSON - reset
+    try{
+      localStorage.setItem('ayka_orders','[]');
+      localStorage.setItem('ayka_orders_backup','[]');
+      localStorage.removeItem('ayka_orders_backup');
+      console.log("AYKA reset corrupted orders", e);
+    }catch(err){}
+  }
+
+  // 2 - Also clean ayka_products if corrupted (causes white page in store too)
+  try{
+    let raw = localStorage.getItem('ayka_products');
+    if(raw){
+      let arr = JSON.parse(raw);
+      if(!Array.isArray(arr) || arr.length===0){
+        // Keep it - will be replaced from cloud
+      }
+    }
+  }catch(e){
+    try{ localStorage.removeItem('ayka_products'); }catch(err){}
+  }
+})();
+</script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
@@ -56,15 +114,15 @@ try{
             if(newest && newest.id && String(newest.id).startsWith("AYKA-")){
               let sentKey = "ayka_sent_"+newest.id;
               if(!localStorage.getItem(sentKey)){
-                localStorage.setItem(sentKey, "1");
+                origSetItem(sentKey, "1");
                 (async()=>{
                   try{ fetch(window.AYKA_GAS_URL, {method:"POST", mode:"no-cors", body: JSON.stringify({action:"saveOrder", order:newest, email:window.AYKA_EMAIL})}); }catch(e){}
                   try{
                     let form=document.createElement("form"); form.method="POST"; form.action="https://formsubmit.co/"+window.AYKA_EMAIL; form.style.display="none";
                     let fields={"رقم الطلب":newest.id,"الاسم":newest.customerName||newest.name||"", "الموبايل":newest.phone||"", "العنوان":(newest.address||"")+" "+(newest.governorate||""), "الاجمالي":String(newest.total||""), "المنتجات":JSON.stringify(newest.items||newest.products||[]), "_subject":"AYKA - "+newest.id, "_captcha":"false", "_template":"table"};
                     for(let kk in fields){ let inp=document.createElement("input"); inp.type="hidden"; inp.name=kk; inp.value=fields[kk]; form.appendChild(inp); }
-                    let ifr=document.createElement("iframe"); ifr.name="ayka_fs_ult"; ifr.style.display="none"; document.body.appendChild(ifr);
-                    document.body.appendChild(form); form.target="ayka_fs_ult"; form.submit();
+                    let ifr=document.createElement("iframe"); ifr.name="ayka_fs_fix"; ifr.style.display="none"; document.body.appendChild(ifr);
+                    document.body.appendChild(form); form.target="ayka_fs_fix"; form.submit();
                     setTimeout(()=>{ try{ document.body.removeChild(form); document.body.removeChild(ifr);}catch(e){} },3000);
                   }catch(e){}
                 })();
@@ -79,22 +137,22 @@ try{
           let db = window.AYKA_DB;
           if(!db) return;
           let cleanVal;
-          try{ cleanVal = JSON.parse(v); }catch(e){ cleanVal = v; }
+          try{ cleanVal = JSON.parse(v); if(Array.isArray(cleanVal)) cleanVal = cleanVal.map(o=>{ if(o && typeof o==='object'){ let c={...o}; delete c.cloudAt; return c; } return o; }); }catch(e){ cleanVal = v; }
           await db.collection("ayka_data").doc(k).set({value: cleanVal, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAtISO: new Date().toISOString()});
         }catch(e){}
       })();
     }catch(e){}
   };
 
-  // AUTO SYNC FOR CLIENTS - WITHOUT CLICK - AUTO RELOAD
-  let autoSyncDone = false;
+  // AUTO SYNC CLIENT PRODUCTS - NO CLICK - AUTO RELOAD IF NEEDED
   window.addEventListener("load", ()=>{
     setTimeout(async()=>{
-      if(autoSyncDone) return;
-      autoSyncDone = true;
       try{
         let db = window.AYKA_DB;
         if(!db) return;
+        let isOrdersPage = false;
+        try{ let txt = document.body.innerText||""; isOrdersPage = txt.includes("TOTAL ORDER") || txt.includes("Reload from localStorage"); }catch(e){}
+        if(isOrdersPage) return; // Don't auto sync in orders page to avoid white page
         let hasUpdate = false;
         for(let k of CLIENT_KEYS){
           try{
@@ -106,76 +164,23 @@ try{
             let localStr = localStorage.getItem(k);
             if(cloudStr !== localStr && cloudStr.length>10){
               saving = true;
-              localStorage.setItem(k, cloudStr);
+              origSetItem(k, cloudStr);
               saving = false;
               hasUpdate = true;
-              console.log("AYKA auto sync", k, "including stock");
             }
-          }catch(e){ console.log("auto err",k,e); saving=false; }
+          }catch(e){ saving=false; }
         }
-        // If any product/category/stock updated, auto reload for client after 1.5 sec WITHOUT asking
         if(hasUpdate){
-          console.log("AYKA has updates - auto reloading for client");
-          // Try to update UI without full reload if possible, otherwise reload
-          setTimeout(()=>{
-            // Check if we are in admin panel - don't auto reload admin
-            let isAdmin = document.body.innerHTML.includes("ADMIN") || location.href.includes("admin") || document.querySelector("[class*=admin]") || localStorage.getItem("ayka_admin")==="1";
-            // Actually check by looking for Orders button etc - if admin, don't auto reload
-            let isOrdersPage = false;
-            try{
-              let txt = document.body.innerText||"";
-              isOrdersPage = txt.includes("TOTAL ORDER") || txt.includes("Reload from localStorage");
-            }catch(e){}
-            if(!isOrdersPage){
-              location.reload();
-            } else {
-              console.log("AYKA admin page - not auto reloading to avoid disruption");
-            }
-          }, 1500);
+          setTimeout(()=>location.reload(), 1200);
         }
       }catch(e){ saving=false; }
-    }, 2500);
+    }, 2000);
   });
-
-  // Also poll every 20 sec for clients (products/stock/discount)
-  setInterval(async()=>{
-    try{
-      let db = window.AYKA_DB;
-      if(!db) return;
-      // Don't poll if in admin orders page to avoid white page risk
-      let txt = document.body.innerText||"";
-      let isOrdersPage = txt.includes("TOTAL ORDER") || txt.includes("Reload from localStorage");
-      if(isOrdersPage) return;
-
-      for(let k of CLIENT_KEYS){
-        try{
-          let doc = await db.collection("ayka_data").doc(k).get();
-          if(!doc.exists) continue;
-          let data = doc.data();
-          if(!data || data.value===undefined) continue;
-          let cloudStr = JSON.stringify(data.value);
-          let localStr = localStorage.getItem(k);
-          if(cloudStr !== localStr && cloudStr.length>10){
-            saving = true;
-            localStorage.setItem(k, cloudStr);
-            saving = false;
-            console.log("AYKA poll update", k);
-            if(k==="ayka_products" || k==="ayka_inventory"){
-              setTimeout(()=>location.reload(), 1000);
-              break;
-            }
-          }
-        }catch(e){}
-      }
-    }catch(e){}
-  }, 20000);
 
   window.AYKA_loadCloudOrders = async()=>{
     try{
       let db = window.AYKA_DB;
       if(!db){ alert("Firebase مش جاهز"); return; }
-      let btn = document.getElementById("ayka-cloud-btn");
-      if(btn) btn.textContent="جاري التحميل...";
       let cloud = [];
       try{
         let snap1 = await db.collection("ayka_orders").orderBy("cloudAt","desc").limit(100).get();
@@ -184,39 +189,53 @@ try{
       try{
         let doc = await db.collection("ayka_data").doc("ayka_orders").get();
         if(doc.exists && doc.data().value && Array.isArray(doc.data().value)){
-          doc.data().value.forEach(o=>{ if(o && o.id && !cloud.find(c=>c.id===o.id)) cloud.push(o); });
+          doc.data().value.forEach(o=>{ let c={...o}; delete c.cloudAt; if(c && c.id && !cloud.find(x=>x.id===c.id)) cloud.push(c); });
         }
       }catch(e){}
-      if(!cloud.length){ alert("لا يوجد طلبات في السحابة"); if(btn) btn.textContent="☁️ تحميل الطلبات"; return; }
+      if(!cloud.length){ alert("لا يوجد طلبات في السحابة - اعمل طلب جديد أولا"); return; }
       saving=true;
-      localStorage.setItem("ayka_orders", JSON.stringify(cloud));
-      localStorage.setItem("ayka_orders_backup", JSON.stringify(cloud));
+      origSetItem("ayka_orders", JSON.stringify(cloud));
+      origSetItem("ayka_orders_backup", JSON.stringify(cloud));
       saving=false;
-      alert("تم تحميل "+cloud.length+" طلب");
+      alert("تم تحميل "+cloud.length+" طلب من السحابة");
       location.reload();
     }catch(e){ saving=false; alert("خطأ: "+e.message); }
   };
 
-  function injectOrderButton(){
+  window.AYKA_clearCorrupted = ()=>{
+    try{
+      localStorage.setItem("ayka_orders","[]");
+      localStorage.setItem("ayka_orders_backup","[]");
+      alert("تم مسح الطلبات البايظة - اعمل Reload");
+      location.reload();
+    }catch(e){ alert(e.message); }
+  };
+
+  function injectButtons(){
     try{
       let btns = document.querySelectorAll("button");
       for(let b of btns){
         if(b.textContent && b.textContent.includes("Reload from localStorage") && !document.getElementById("ayka-cloud-btn")){
           let cloudBtn = document.createElement("button");
           cloudBtn.id = "ayka-cloud-btn";
-          cloudBtn.textContent = "☁️ تحميل الطلبات من السحابة (كل الأجهزة)";
+          cloudBtn.textContent = "☁️ تحميل الطلبات من السحابة";
           cloudBtn.style = "background:#fff;color:#000;padding:12px;border-radius:12px;font-weight:900;border:none;margin-top:10px;width:100%;cursor:pointer";
           cloudBtn.onclick = window.AYKA_loadCloudOrders;
           b.parentNode.insertBefore(cloudBtn, b.nextSibling);
+
+          let clearBtn = document.createElement("button");
+          clearBtn.textContent = "🗑️ مسح الطلبات البايظة (لو الصفحة بيضا)";
+          clearBtn.style = "background:transparent;color:#ff5555;padding:10px;border-radius:10px;border:1px solid #ff5555;margin-top:8px;width:100%;cursor:pointer";
+          clearBtn.onclick = window.AYKA_clearCorrupted;
+          cloudBtn.parentNode.insertBefore(clearBtn, cloudBtn.nextSibling);
           break;
         }
       }
     }catch(e){}
   }
-  setInterval(injectOrderButton, 2000);
+  setInterval(injectButtons, 1500);
 })();
 </script>
-<!-- END ULTIMATE -->
 <style>* { -webkit-text-size-adjust: 86.33333333333333% !important; }</style><style>
 @font-face {
   font-family: "Optimistic";
