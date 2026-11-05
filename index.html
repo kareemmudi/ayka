@@ -2847,115 +2847,108 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
 
 <script>
-// FINAL FIX V8 - 0 Products bug + lh3 Drive Images 100% + Discount + Same Shape
+// FINAL FIX V9 - GitHub Images + Discount by ID (not index) + Images by Name
 (function(){
-  const GAS = "https://script.google.com/macros/s/AKfycbxzjY_Qp7_tSPpymhi_WnkHDrdYFQwSyMNned1x9rU4MQPKQ5QG3xJGGR79qzlZA7Zl/exec";
-  const RATES = {"Cairo":50,"Giza":50,"Alexandria":70,"Dakahlia":80,"Red Sea":120,"Beheira":80,"Fayoum":85,"Gharbia":80,"Ismailia":90,"Menoufia":80,"Minya":95,"Qaliubiya":60,"New Valley":120,"Suez":90,"Aswan":110,"Assiut":95,"Beni Suef":85,"Port Said":90,"Damietta":85,"Sharqia":80,"South Sinai":120,"Kafr El Sheikh":85,"Matrouh":110,"Luxor":110,"Qena":100,"North Sinai":120,"Sohag":95};
-  
-  try{
-    localStorage.setItem('ayka_gas_url', GAS);
-    localStorage.setItem('ayka_shipping_rates', JSON.stringify(RATES));
-    localStorage.setItem('ayka_v2_shipping', JSON.stringify(RATES));
-  }catch(e){}
-  
-  // Fix products data - ensure lh3 links work and stock exact
-  function normalize(){
-    try{
-      let prods = JSON.parse(localStorage.getItem('ayka_products')||'[]');
-      if(!prods.length) return;
-      prods = prods.map(p=>{
-        // Fix image - ensure Drive lh3 link is kept
-        if(p.image && p.image.indexOf('drive.google.com/uc?')!==-1){
-          // Convert old broken link to lh3 if possible (extract ID)
-          let idMatch = p.image.match(/id=([^&]+)/);
-          if(idMatch) p.image = "https://lh3.googleusercontent.com/d/"+idMatch[1]+"=s1000";
-        }
-        if(p.images){
-          p.images = p.images.map(img=>{
-            if(img && img.indexOf('drive.google.com/uc?')!==-1){
-              let idMatch = img.match(/id=([^&]+)/);
-              if(idMatch) return "https://lh3.googleusercontent.com/d/"+idMatch[1]+"=s1000";
+  const GAS="https://script.google.com/macros/s/AKfycbxzjY_Qp7_tSPpymhi_WnkHDrdYFQwSyMNned1x9rU4MQPKQ5QG3xJGGR79qzlZA7Zl/exec";
+  try{localStorage.setItem('ayka_gas_url', GAS);}catch(e){}
+
+  function getProducts(){ try{ return JSON.parse(localStorage.getItem('ayka_products')||'[]');}catch(e){return [];} }
+
+  function fixByName(){
+    const products=getProducts();
+    if(!products.length) return;
+    // Build map by name lowercased
+    const map={};
+    products.forEach(p=>{ if(p.name) map[p.name.trim().toLowerCase()] = p; });
+
+    // Find all product cards
+    const cards=document.querySelectorAll('div.group');
+    cards.forEach(card=>{
+      // Find name inside card - look for font-bold or product name text
+      let nameEl=null;
+      // try to find name: first div with text that matches product name
+      const possible = card.querySelectorAll('div, span, h3, p');
+      let productName="";
+      for(let el of possible){
+        const txt=(el.textContent||"").trim();
+        if(txt.length>2 && txt.length<60 && map[txt.toLowerCase()]){ productName=txt; nameEl=el; break; }
+      }
+      if(!productName) return;
+      const prod=map[productName.toLowerCase()];
+      if(!prod) return;
+
+      // --- IMAGE FIX ---
+      try{
+        const box=card.querySelector('div.relative') || card.querySelector('[class*="aspect-"]');
+        if(box){
+          let src = prod.image || (prod.images&&prod.images[0]) || "";
+          // GitHub images or lh3 or ibb
+          if(src && src.indexOf('http')===0){
+            let img=box.querySelector('img');
+            if(!img){
+              // hide emoji
+              const emoji=box.querySelector('span.text-\[64px\]');
+              if(emoji) emoji.style.display='none';
+              img=document.createElement('img');
+              img.style.cssText='width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;';
+              box.style.position='relative';
+              box.insertBefore(img, box.firstChild);
             }
-            return img;
-          });
-        }
-        if(!p.image && p.images && p.images[0]) p.image = p.images[0];
-        // Fix stock exact
-        if(p.variants){
-          try{
-            let total = Object.values(p.variants).reduce((a,b)=>a+(parseInt(b)||0),0);
-            p.stock = total;
-          }catch(e){}
-        }
-        // Ensure prices are numbers
-        if(p.price) p.price = parseInt(p.price)||0;
-        if(p.originalPrice) p.originalPrice = parseInt(p.originalPrice)||0;
-        return p;
-      });
-      localStorage.setItem('ayka_products', JSON.stringify(prods));
-    }catch(e){}
-  }
-  
-  // Inject discount + image fix that works with React
-  function fixUI(){
-    try{
-      let prods = JSON.parse(localStorage.getItem('ayka_products')||'[]');
-      if(!prods.length) return;
-      const cards = document.querySelectorAll('div.group');
-      cards.forEach((card, idx)=>{
-        if(idx>=prods.length) return;
-        const p = prods[idx];
-        if(!p) return;
-        
-        // Image
-        try{
-          const box = card.querySelector('div.relative');
-          if(box){
-            const src = p.image || (p.images&&p.images[0]);
-            if(src && (src.indexOf('http')===0 || src.indexOf('https://lh3')===0)){
-              let img = box.querySelector('img');
-              if(!img){
-                const emoji = box.querySelector('span.text-\[64px\]');
-                if(emoji) emoji.style.display='none';
-                img = document.createElement('img');
-                img.style.cssText='width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;';
-                box.insertBefore(img, box.firstChild);
-              }
-              if(img.src !== src) img.src = src;
-            }
+            if(img.src!==src) img.src=src;
           }
-        }catch(e){}
-        
-        // Discount
-        try{
-          if(p.originalPrice && parseInt(p.originalPrice) > parseInt(p.price)){
-            const perc = Math.round((1 - p.price / p.originalPrice)*100);
-            const box = card.querySelector('div.relative');
-            if(box && !box.querySelector('.ayka-discount')){
-              const badge = document.createElement('div');
-              badge.className='ayka-discount';
-              badge.style.cssText='position:absolute;top:10px;left:10px;background:#3B82F6;color:#fff;font-size:10px;font-weight:800;padding:4px 8px;border-radius:12px;z-index:10;';
-              badge.textContent='خصم '+perc+'%';
-              box.appendChild(badge);
-            }
-            const priceEl = card.querySelector('div.text-\[16px\]') || card.querySelector('[class*="font-black"]');
-            if(priceEl && !priceEl.querySelector('.ayka-old')){
-              const old = document.createElement('span');
-              old.className='ayka-old';
-              old.style.cssText='color:#666;text-decoration:line-through;font-size:11px;margin-left:6px;';
-              old.textContent=p.originalPrice+' EGP';
-              priceEl.appendChild(old);
-            }
+        }
+      }catch(e){}
+
+      // --- DISCOUNT FIX BY ID (not index) ---
+      try{
+        const box=card.querySelector('div.relative') || card.querySelector('[class*="aspect-"]');
+        const priceBox=card.querySelector('div.flex.items-center, div.flex.gap-2');
+        // Remove old wrong badges
+        const oldBadges=card.querySelectorAll('.ayka-discount-wrong');
+        oldBadges.forEach(b=>b.remove());
+
+        if(prod.originalPrice && parseFloat(prod.originalPrice) > parseFloat(prod.price)){
+          const perc=Math.round((1 - prod.price / prod.originalPrice)*100);
+          // Add discount badge only to this product card
+          if(box && !box.querySelector('.ayka-discount-correct')){
+            const badge=document.createElement('div');
+            badge.className='ayka-discount-correct';
+            badge.style.cssText='position:absolute;top:10px;left:10px;background:#3B82F6;color:#fff;font-size:10px;font-weight:800;padding:4px 8px;border-radius:12px;z-index:10;';
+            badge.textContent='خصم '+perc+'%';
+            box.appendChild(badge);
           }
-        }catch(e){}
-      });
-    }catch(e){}
+          // Add old price
+          const priceEls=card.querySelectorAll('[class*="text-"]');
+          let priceEl=null;
+          for(let pe of priceEls){ if(pe.textContent.includes(prod.price)) {priceEl=pe; break;} }
+          if(priceEl && !priceEl.querySelector('.ayka-old-price')){
+            const old=document.createElement('div');
+            old.className='ayka-old-price';
+            old.style.cssText='color:#666;text-decoration:line-through;font-size:11px;margin-top:2px;';
+            old.textContent=prod.originalPrice+' EGP قبل الخصم';
+            priceEl.parentElement.appendChild(old);
+          }
+        }else{
+          // No discount - ensure no badge
+          const b=card.querySelector('.ayka-discount-correct');
+          if(b) b.remove();
+          const old=card.querySelector('.ayka-old-price');
+          if(old) old.remove();
+        }
+      }catch(e){}
+    });
   }
-  
-  setInterval(()=>{ normalize(); fixUI(); }, 2000);
-  setTimeout(()=>{ normalize(); fixUI(); }, 1000);
-  setTimeout(fixUI, 3000);
-  setTimeout(fixUI, 5000);
+
+  // Run every 1.5s to catch category changes
+  setInterval(fixByName, 1500);
+  setTimeout(fixByName, 1000);
+  setTimeout(fixByName, 3000);
+  setTimeout(fixByName, 5000);
+
+  // Also fix old wrong badges that were added by previous version
+  setInterval(()=>{
+    document.querySelectorAll('.ayka-discount, .ayka-discount-badge').forEach(el=>{ if(!el.classList.contains('ayka-discount-correct')) el.remove(); });
+  }, 2000);
 })();
 </script>
 
