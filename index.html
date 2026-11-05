@@ -19,25 +19,7 @@
 :where(code, pre, kbd, samp) {
   font-family: "Optimistic Mono", ui-monospace, monospace;
 }
-</style>
-<script>
-// AYKA STORE FINAL - NO ADMIN CODE VISIBLE
-(function(){
-  const NEW_GAS = "https://script.google.com/macros/s/AKfycbxzjY_Qp7_tSPpymhi_WnkHDrdYFQwSyMNned1x9rU4MQPKQ5QG3xJGGR79qzlZA7Zl/exec";
-  try {
-    const u = new URL(window.location.href);
-    if(u.searchParams.has('admin')){ u.searchParams.delete('admin'); history.replaceState({}, '', u.pathname + u.search + u.hash); }
-  } catch(e){}
-  window.__AYKA_STORE_ONLY_FINAL__ = true;
-  localStorage.setItem("ayka_gas_url", NEW_GAS);
-  localStorage.setItem("ayka_last_store_sync", String(Date.now()));
-})();
-</script>
-<style>
-#adminDot{display:none !important; pointer-events:none !important; width:0 !important; height:0 !important; opacity:0 !important;}
-#adminLogin{display:none !important;}
-</style>
-<style>* { -webkit-text-size-adjust: 86.33333333333333% !important; }</style><style>
+</style><style>* { -webkit-text-size-adjust: 86.33333333333333% !important; }</style><style>
 @font-face {
   font-family: "Optimistic";
   font-style: normal;
@@ -2569,7 +2551,11 @@ summary {
   }
 }
 </style>
-</head>
+<style>
+    .ayka-discount-badge { position:absolute; top:10px; left:10px; background:#3B82F6; color:#fff; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; z-index:10; }
+    .ayka-old-price { color:#666; text-decoration:line-through; font-size:11px; margin-left:6px; }
+    .ayka-discount-detail { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#3B82F6; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; }
+  </style></head>
 <body>
   <div id="root"><div class="min-h-screen bg-[#0a0a0b] text-white selection:bg-[#3B82F6]/30" style="font-family: &quot;Space Grotesk&quot;, Cairo, system-ui, sans-serif; padding-top: var(--safe-area-inset-top); box-sizing: border-box;"><style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Cairo:wght@400;600;700&display=swap');
@@ -2865,105 +2851,127 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
 
 <script>
-// Block all admin entry points for STORE
-document.addEventListener('DOMContentLoaded', function(){
-  // 1. Remove dot
-  const dot = document.getElementById('adminDot');
-  if(dot) dot.remove();
-  // 2. Disable 5x logo trick by cloning logo
-  const logo = document.getElementById('aykaLogo');
-  if(logo){
-    const clone = logo.cloneNode(true);
-    clone.id = "aykaLogo";
-    logo.parentNode.replaceChild(clone, logo);
-    clone.addEventListener('click', function(e){
-      e.preventDefault(); e.stopPropagation();
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-  }
-  // 3. Block ?admin param if added later
-  const origPush = history.pushState;
-  history.pushState = function(){
-    const url = arguments[2] || "";
-    if(typeof url === 'string' && url.includes('admin=')){
-      arguments[2] = url.replace(/([?&])admin=[^&]*/g,'');
-    }
-    return origPush.apply(this, arguments);
-  };
-});
-</script>
-
-<script>
-// AYKA FINAL - REAL-TIME SYNC v3 - NEW GAS
-(function(){
-  const GAS = "https://script.google.com/macros/s/AKfycbxzjY_Qp7_tSPpymhi_WnkHDrdYFQwSyMNned1x9rU4MQPKQ5QG3xJGGR79qzlZA7Zl/exec";
-  const LAST_SYNC_KEY = "ayka_last_sync";
+// PATCH - Fix GAS URL, 27 Govs, Discount (originalPrice), and 2 Emails - WITHOUT changing theme/shape
+(function() {
+  const NEW_GAS_URL = "https://script.google.com/macros/s/AKfycbxzjY_Qp7_tSPpymhi_WnkHDrdYFQwSyMNned1x9rU4MQPKQ5QG3xJGGR79qzlZA7Zl/exec";
+  const GOVS_27 = {"Cairo":50,"Giza":50,"Alexandria":70,"Dakahlia":80,"Red Sea":120,"Beheira":80,"Fayoum":85,"Gharbia":80,"Ismailia":90,"Menoufia":80,"Minya":95,"Qaliubiya":60,"New Valley":120,"Suez":90,"Aswan":110,"Assiut":95,"Beni Suef":85,"Port Said":90,"Damietta":85,"Sharqia":80,"South Sinai":120,"Kafr El Sheikh":85,"Matrouh":110,"Luxor":110,"Qena":100,"North Sinai":120,"Sohag":95};
   
-  // ====== STORE SYNC HELPERS ======
-  async function syncAllFromServer(){
+  // 1. Fix GAS URL in localStorage
+  try {
+    localStorage.setItem('ayka_gas_url', NEW_GAS_URL);
+    localStorage.setItem('ayka_shipping_rates', JSON.stringify(GOVS_27));
+    localStorage.setItem('ayka_v2_shipping', JSON.stringify(GOVS_27));
+    localStorage.setItem('ayka_shipping', JSON.stringify(GOVS_27));
+  } catch(e){}
+  
+  // 2. Ensure 27 govs - if old shipping has insideCairo, replace with 27
+  try {
+    const checkShipping = setInterval(() => {
+      try {
+        let s = localStorage.getItem('ayka_v2_shipping');
+        if (s) {
+          let p = JSON.parse(s);
+          if (p.insideCairo || Object.keys(p).length < 15) {
+            localStorage.setItem('ayka_v2_shipping', JSON.stringify(GOVS_27));
+            localStorage.setItem('ayka_shipping_rates', JSON.stringify(GOVS_27));
+          }
+        }
+      } catch(e){}
+    }, 2000);
+    setTimeout(() => clearInterval(checkShipping), 10000);
+  } catch(e){}
+  
+  // 3. Fix orders to send to BOTH emails and new GAS
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    // If it's sending order to old GAS, redirect to new GAS
+    if (typeof url === 'string' && url.includes('script.google.com')) {
+      url = NEW_GAS_URL;
+    }
+    // If body contains order, ensure it also sends to second email via FormSubmit AJAX
     try {
-      // getAll = products + settings + shipping in one call
-      const r = await fetch(GAS + "?action=getAll&t=" + Date.now());
-      const d = await r.json();
-      if(d.products && d.products.length){
-        localStorage.setItem("ayka_products", JSON.stringify(d.products));
-      }
-      if(d.shipping){
-        localStorage.setItem("ayka_shipping", JSON.stringify(d.shipping));
-        localStorage.setItem("ayka_v2_shipping", JSON.stringify(d.shipping));
-      }
-      if(d.settings){
-        localStorage.setItem("ayka_v2_settings", JSON.stringify(d.settings));
-        localStorage.setItem("ayka_settings", JSON.stringify(d.settings));
-      }
-      if(d.orders && d.orders.length){
-        localStorage.setItem("ayka_orders", JSON.stringify(d.orders));
-        localStorage.setItem("ayka_orders_backup", JSON.stringify(d.orders));
-      }
-      localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
-      window.dispatchEvent(new Event('ayka_sync_update'));
-    } catch(e){ console.log("sync error", e); }
-  }
-
-  async function pushAllToServer(){
-    try {
-      const products = localStorage.getItem("ayka_products");
-      const shipping = localStorage.getItem("ayka_v2_shipping") || localStorage.getItem("ayka_shipping");
-      const settings = localStorage.getItem("ayka_v2_settings") || localStorage.getItem("ayka_settings");
-      if(products){
-        await fetch(GAS, {method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action:"saveProducts", products: JSON.parse(products)})});
-      }
-      if(shipping || settings){
-        let shipObj = null; let settObj = null;
-        try { shipObj = shipping ? JSON.parse(shipping) : null; } catch(e){}
-        try { settObj = settings ? JSON.parse(settings) : null; } catch(e){}
-        await fetch(GAS, {method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action:"saveSettings", shipping: shipObj, settings: settObj})});
+      if (options && options.body && typeof options.body === 'string' && options.body.includes('"order"') || options.body.includes('Order ID')) {
+        // This is an order - also send to second email via FormSubmit AJAX
+        try {
+          let orderData = null;
+          try { orderData = JSON.parse(options.body); } catch(e) {}
+          if (orderData && orderData.order) {
+            let order = orderData.order;
+            // Send to second email kareemmudiii@gmail.com via FormSubmit AJAX
+            let fd = new FormData();
+            fd.append('_subject', '🛒 New AYKA Order '+order.id+' - '+order.customer.name+' - '+order.customer.governorate);
+            fd.append('_captcha', 'false');
+            fd.append('_template', 'table');
+            fd.append('Order ID', order.id);
+            fd.append('Customer', order.customer.name);
+            fd.append('Phone', order.customer.phone);
+            fd.append('Governorate', order.customer.governorate);
+            fd.append('Address', order.customer.address);
+            fd.append('Items', (order.items||[]).map(i=>i.name+' ['+i.size+'|'+i.color+'] x'+i.qty+' = '+(i.price*i.qty)+' EGP '+(i.originalPrice?'(Discount from '+i.originalPrice+')':'')).join('\n'));
+            fd.append('Subtotal', order.subtotal+' EGP');
+            fd.append('Shipping', (order.shipping||order.shippingCost||0)+' EGP');
+            fd.append('Total', order.total+' EGP');
+            originalFetch('https://formsubmit.co/ajax/kareemmudiii@gmail.com', {method:'POST', body:fd}).catch(()=>{});
+            // Also ensure new GAS gets it with variants stock handling
+            originalFetch(NEW_GAS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveOrder', order:order})}).catch(()=>{});
+          }
+        } catch(e){}
       }
     } catch(e){}
-  }
-
-  // Hook localStorage to auto-push when dashboard edits anything
-  const origSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(k,v){
-    origSetItem(k,v);
-    if(["ayka_products","ayka_v2_products","ayka_shipping","ayka_v2_shipping","ayka_v2_settings","ayka_settings","ayka_v2_categories"].includes(k) || k.startsWith("ayka_")){
-      // debounce push
-      clearTimeout(window._aykaPushTimeout);
-      window._aykaPushTimeout = setTimeout(pushAllToServer, 800);
-    }
+    return originalFetch.call(this, url, options);
   };
-
-  // Initial sync after app loads
-  setTimeout(syncAllFromServer, 1500);
-  // Poll every 7 seconds - this makes it work on ANY phone in world
-  setInterval(syncAllFromServer, 7000);
-  // Sync when user returns to tab
-  document.addEventListener('visibilitychange', function(){
-    if(!document.hidden) syncAllFromServer();
-  });
-
-  console.log("AYKA v3 Real-time sync active - GAS:", GAS);
+  
+  // 4. Fix discount display - inject CSS for discount badge without changing theme colors
+  const style = document.createElement('style');
+  style.textContent = `
+    .ayka-discount-badge { position:absolute; top:10px; left:10px; background:#3B82F6; color:#fff; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; z-index:10; }
+    .ayka-old-price { color:#666; text-decoration:line-through; font-size:11px; margin-left:6px; }
+    .ayka-discount-detail { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#3B82F6; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; }
+  `;
+  document.head.appendChild(style);
+  
+  // 5. Observe products and inject discount badge if product has originalPrice
+  function injectDiscountBadges() {
+    try {
+      let prods = JSON.parse(localStorage.getItem('ayka_products')||'[]');
+      if (!prods.length) return;
+      // Find all product cards
+      const cards = document.querySelectorAll('.group.bg-\[\#111113\]');
+      cards.forEach((card, idx) => {
+        const p = prods[idx];
+        if (!p) return;
+        if (p.originalPrice && p.originalPrice > p.price) {
+          // Check if discount badge already exists
+          if (card.querySelector('.ayka-discount-badge')) return;
+          const discountPercent = Math.round((1 - p.price / p.originalPrice) * 100);
+          // Find image container
+          const imgContainer = card.querySelector('.relative.aspect-\[1\/1\]');
+          if (imgContainer) {
+            const badge = document.createElement('span');
+            badge.className = 'ayka-discount-badge';
+            badge.textContent = 'خصم '+discountPercent+'%';
+            imgContainer.appendChild(badge);
+          }
+          // Find price
+          const priceEl = card.querySelector('.text-\[16px\].font-black');
+          if (priceEl && !priceEl.querySelector('.ayka-old-price')) {
+            const oldPrice = document.createElement('span');
+            oldPrice.className = 'ayka-old-price';
+            oldPrice.textContent = p.originalPrice+' EGP';
+            priceEl.appendChild(oldPrice);
+          }
+        }
+      });
+    } catch(e){}
+  }
+  
+  // Run discount injection every 2 seconds (after React renders)
+  setInterval(injectDiscountBadges, 2000);
+  setTimeout(injectDiscountBadges, 3000);
+  
+  console.log('AYKA PATCH V4 - Same Theme/Shape, Fixed GAS, 27 Govs, Discount, 2 Emails');
 })();
 </script>
+
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
 </body></html>
