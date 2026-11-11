@@ -3102,11 +3102,21 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
         let ship = await sr.json();
         if(ship && (Array.isArray(ship) || typeof ship === 'object')){
           let shipJson = JSON.stringify(ship);
-          try{ localStorage.setItem('ayka_shipping', shipJson); }catch(e){}
+          try{
+            let oldShip = localStorage.getItem('ayka_v2_shipping');
+            if(oldShip !== shipJson){
+              localStorage.setItem('ayka_v2_shipping', shipJson);
+              // Shipping state is loaded once on page load, so reload to apply new prices
+              if(!sessionStorage.getItem('ayka_ship_reloaded_' + shipJson.length)){
+                sessionStorage.setItem('ayka_ship_reloaded_' + shipJson.length, '1');
+                setTimeout(()=>location.reload(), 500);
+              }
+            }
+          }catch(e){}
           // Apply to DOM inputs with data-cost (checkout reads these)
           try{
             let arr = Array.isArray(ship) ? ship : Object.values(ship);
-            document.querySelectorAll('input[data-cost]').forEach(inp=>{
+            document.querySelectorAll('#govSelect option').forEach(inp=>{
               // Find governorate name from nearby text - match by order if names not available
               let parent = inp.closest('div');
               let label = parent ? parent.textContent : '';
