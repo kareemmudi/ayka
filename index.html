@@ -3060,6 +3060,14 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
     try{ sessionStorage.setItem('ayka_sent_ids', JSON.stringify([...sentOrderIds])); }catch(e){}
     try{ localStorage.setItem('ayka_sent_ids', JSON.stringify([...sentOrderIds])); }catch(e){}
   }
+  // V9.3: Pending queue - orders that must not be lost
+  function savePendingOrder(order){
+    try{
+      let q = JSON.parse(localStorage.getItem('ayka_pending_orders')||'[]');
+      if(!q.find(o=>o.id===order.id)) q.unshift(order);
+      localStorage.setItem('ayka_pending_orders', JSON.stringify(q));
+    }catch(e){}
+  }
   async function pollFirebase(){
     pollCount++;
     try{
@@ -3085,6 +3093,23 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
       for(let o of orders){ let id = o.id || o._fbKey; if(!seen.has(id)){ seen.add(id); deduped.push(o); } }
       orders = deduped;
       if(ordersEl) ordersEl.textContent = orders.length;
+      // V9.3 FIX: MERGE, don't overwrite - keep local orders not yet in Firebase
+      try{
+        let localOrders = [];
+        try{ localOrders = JSON.parse(localStorage.getItem('ayka_orders')||'[]'); }catch(e){}
+        if(Array.isArray(localOrders)){
+          let fbIds = new Set(orders.map(o=>o.id));
+          for(let lo of localOrders){
+            if(lo && lo.id && !fbIds.has(lo.id) && !sentOrderIds.has(lo.id)){
+              // Local order not yet in Firebase - keep it and try to push it now
+              console.log('AYKA V9.3: Found unsent local order, retrying push', lo.id);
+              let safeId = String(lo.id).replace(/[^a-zA-Z0-9-_]/g,'_');
+              _origFetch(FB + '/orders/' + safeId + '.json', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(lo)}).then(()=>{ markSent(lo.id); }).catch(()=>{});
+              orders.unshift(lo);
+            }
+          }
+        }
+      }catch(e){}
       let oj = JSON.stringify(orders);
       if(oj !== lastOrdersJson){
         let isFirst = lastOrdersJson==='';
@@ -3155,7 +3180,15 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
             // PUT by ID = same ID overwrites, never duplicates
             let safeId = String(latest.id).replace(/[^a-zA-Z0-9-_]/g,'_');
             console.log('AYKA V7: Pushing order by ID', latest.id);
-            _origFetch(FB + '/orders/' + safeId + '.json', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(latest)}).then(()=>pollFirebase()).catch(()=>{});
+            // V9.3: Retry order push 3 times so slow network doesn't lose the order
+            (function pushOrder(attempt){
+              _origFetch(FB + '/orders/' + safeId + '.json', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(latest)}).then(()=>pollFirebase()).catch(()=>{
+                if(attempt < 3){
+                  console.log('AYKA V9.3: Order push failed, retry', attempt+1, latest.id);
+                  setTimeout(()=>pushOrder(attempt+1), 1500);
+                }
+              });
+            })(1);
           }
         }
       }catch(e){}
