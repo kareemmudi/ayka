@@ -3131,29 +3131,42 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
             let oldShip = localStorage.getItem('ayka_v2_shipping');
             if(oldShip !== shipJson){
               localStorage.setItem('ayka_v2_shipping', shipJson);
-              // Shipping state is loaded once on page load, so reload to apply new prices
-              if(!sessionStorage.getItem('ayka_ship_reloaded_' + shipJson.length)){
-                sessionStorage.setItem('ayka_ship_reloaded_' + shipJson.length, '1');
-                setTimeout(()=>location.reload(), 500);
+              // V9.4: Use content hash, not length - 50->60 has same length but different price
+              let shipHash = 0; for(let i=0;i<shipJson.length;i++){ shipHash = (shipHash*31 + shipJson.charCodeAt(i)) >>> 0; }
+              let reloadKey = 'ayka_ship_reloaded_' + shipHash;
+              if(!sessionStorage.getItem(reloadKey)){
+                sessionStorage.setItem(reloadKey, '1');
+                // Update select options immediately AND reload to make React re-read shipping
+                try{
+                  let arr2 = Array.isArray(ship) ? ship : Object.values(ship);
+                  let sel = document.getElementById('govSelect');
+                  if(sel){
+                    for(let opt of sel.options){
+                      let govName = opt.value || opt.text;
+                      let match = arr2.find(s=> (s.governorate||s.name||'') === govName || (s.governorate||'') === opt.text);
+                      if(match) opt.setAttribute('data-cost', String(match.cost));
+                    }
+                    if(window.updateShipping) window.updateShipping();
+                  }
+                }catch(e){}
+                setTimeout(()=>location.reload(), 800);
               }
             }
           }catch(e){}
-          // Apply to DOM inputs with data-cost (checkout reads these)
+          // V9.4: Apply shipping to checkout select - set data-cost on each <option> by governorate name
           try{
             let arr = Array.isArray(ship) ? ship : Object.values(ship);
-            document.querySelectorAll('#govSelect option').forEach(inp=>{
-              // Find governorate name from nearby text - match by order if names not available
-              let parent = inp.closest('div');
-              let label = parent ? parent.textContent : '';
-              for(let s of arr){
-                let gov = s.governorate || s.name || s.gov || '';
-                let cost = s.cost ?? s.price ?? s.value;
-                if(gov && label.includes(gov) && cost != null){
-                  inp.value = cost; inp.setAttribute('data-cost', cost);
-                  inp.dispatchEvent(new Event('change', {bubbles:true}));
+            let sel = document.getElementById('govSelect');
+            if(sel){
+              for(let opt of sel.options){
+                let govName = opt.value || opt.textContent.trim();
+                let match = arr.find(s=> (s.governorate||s.name||s.gov||'') === govName);
+                if(match && match.cost != null){
+                  opt.setAttribute('data-cost', String(match.cost));
                 }
               }
-            });
+              if(window.updateShipping) window.updateShipping();
+            }
           }catch(e){}
         }
       }catch(e){}
