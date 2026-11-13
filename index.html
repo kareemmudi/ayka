@@ -3241,5 +3241,123 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
 })();
 </script>
 
+
+  <script>
+// V9.5 THEMES - 10 preset themes, dashboard is source of truth
+  window.AYKA_THEMES = [
+    {id:'ayka-blue', name:'AYKA Blue (الأساسي)', primary:'#3B82F6', bg:'#0a0a0b', card:'#111113', border:'#222222', text:'#ffffff', desc:'التصميم الأصلي'},
+    {id:'midnight-purple', name:'Midnight Purple', primary:'#8B5CF6', bg:'#0a0a0b', card:'#14101f', border:'#2a2150', text:'#ffffff', desc:'بنفسجي غامق'},
+    {id:'blood-red', name:'Blood Red', primary:'#EF4444', bg:'#0a0a0b', card:'#1a0f0f', border:'#3a1a1a', text:'#ffffff', desc:'أحمر قوي'},
+    {id:'neon-green', name:'Neon Green', primary:'#22C55E', bg:'#0a0a0b', card:'#0f1a12', border:'#1a3a22', text:'#ffffff', desc:'أخضر نيون'},
+    {id:'sunset-orange', name:'Sunset Orange', primary:'#F97316', bg:'#0a0a0b', card:'#1a130f', border:'#3a2a1a', text:'#ffffff', desc:'برتقالي'},
+    {id:'gold-luxe', name:'Gold Luxe', primary:'#EAB308', bg:'#0a0a0b', card:'#1a1a0f', border:'#3a3a1a', text:'#ffffff', desc:'دهبي فخم'},
+    {id:'ice-cyan', name:'Ice Cyan', primary:'#06B6D4', bg:'#0a0a0b', card:'#0f1a1a', border:'#1a3a3a', text:'#ffffff', desc:'سماوي ثلجي'},
+    {id:'pink-barbie', name:'Pink Barbie', primary:'#EC4899', bg:'#0a0a0b', card:'#1a0f1a', border:'#3a1a3a', text:'#ffffff', desc:'بينك'},
+    {id:'snow-white', name:'Snow White (فاتح)', primary:'#0a0a0b', bg:'#f8f8f8', card:'#ffffff', border:'#e5e5e5', text:'#0a0a0b', desc:'واجهة فاتحة'},
+    {id:'olive-street', name:'Olive Street', primary:'#84CC16', bg:'#0f0f0a', card:'#1a1a0f', border:'#2a2a1a', text:'#ffffff', desc:'زيتي ستريت'},
+  ];
+  window.aykaApplyTheme = function(theme){
+    if(!theme) return;
+    try{
+      let style = document.getElementById('ayka-theme-style');
+      if(!style){
+        style = document.createElement('style');
+        style.id = 'ayka-theme-style';
+        document.head.appendChild(style);
+      }
+      // Override via attribute selectors so Tailwind arbitrary classes are covered without redesign
+      style.textContent = `
+        body { background: ${theme.bg} !important; color: ${theme.text} !important; }
+        [class*="bg-[#0a0a0b]"] { background-color: ${theme.bg} !important; }
+        [class*="bg-[#111113]"] { background-color: ${theme.card} !important; }
+        [class*="bg-[#3B82F6]"] { background-color: ${theme.primary} !important; }
+        [class*="text-[#3B82F6]"] { color: ${theme.primary} !important; }
+        [class*="border-[#3B82F6]"] { border-color: ${theme.primary} !important; }
+        [class*="border-[#222]"] { border-color: ${theme.border} !important; }
+        [class*="shadow-[0_0_20px_rgba(59,130,246"] { box-shadow: 0 0 20px ${theme.primary}55 !important; }
+        a, button.bg-blue-500 { background-color: ${theme.primary} !important; }
+      `;
+      document.documentElement.style.setProperty('--ayka-primary', theme.primary);
+      document.documentElement.style.setProperty('--ayka-bg', theme.bg);
+      document.documentElement.style.setProperty('--ayka-card', theme.card);
+      try{ localStorage.setItem('ayka_theme', JSON.stringify(theme)); }catch(e){}
+      console.log('AYKA V9.5: Theme applied', theme.id);
+    }catch(e){}
+  }
+  window.aykaLoadThemeFromFirebase = function(){
+    fetch(FB + '/theme.json?ts=' + Date.now()).then(r=>r.json()).then(t=>{
+      if(t && t.id){ aykaApplyTheme(t); }
+      else {
+        // No theme saved yet = default AYKA Blue, don't change anything
+        try{
+          let saved = JSON.parse(localStorage.getItem('ayka_theme')||'null');
+          if(saved && saved.id) aykaApplyTheme(saved);
+        }catch(e){}
+      }
+    }).catch(()=>{});
+  }
+
+</script>
+<script>(function(){ window.aykaLoadThemeFromFirebase(); setInterval(aykaLoadThemeFromFirebase, 5000); })();</script>
+
+<script>
+// V9.6 SHAPES - 10 layout shapes, base design untouched, only additions
+window.AYKA_SHAPES = [
+  {id:'ayka-original', name:'AYKA Original (الأساسي)', desc:'شكل المتجر الأصلي V9.3', preview:'▦ ▦ ▦'},
+  {id:'rounded-soft', name:'Rounded Soft', desc:'كروت مدورة ناعمة', preview:'( ▦ ) ( ▦ )'},
+  {id:'sharp-square', name:'Sharp Square', desc:'زوايا حادة مربعة', preview:'[▦] [▦]'},
+  {id:'pill-capsule', name:'Pill Capsule', desc:'زراير وكروت كبسولة', preview:'( ▦ )'},
+  {id:'minimal-flat', name:'Minimal Flat', desc:'من غير ظلال، هادي', preview:'▦ ▦'},
+  {id:'bold-border', name:'Bold Border', desc:'حواف تقيلة وواضحة', preview:'▣ ▣'},
+  {id:'big-cards', name:'Big Cards', desc:'كروت كبيرة وواضحة', preview:'▦'},
+  {id:'list-view', name:'List View', desc:'المنتجات بالطول', preview:'▦\n▦\n▦'},
+  {id:'compact-grid', name:'Compact Grid', desc:'كروت صغيرة كتيرة', preview:'▦▦▦▦'},
+  {id:'luxury-wide', name:'Luxury Wide', desc:'مسافات واسعة وفخمة', preview:'  ▦  '},
+];
+window.aykaApplyShape = function(shape){
+  try{
+    if(!shape) shape = window.AYKA_SHAPES[0];
+    document.body.setAttribute('data-shape', shape.id);
+    document.documentElement.setAttribute('data-shape', shape.id);
+    try{ localStorage.setItem('ayka_shape', JSON.stringify(shape)); }catch(e){}
+  }catch(e){}
+};
+window.aykaLoadShapeFromFirebase = async function(){
+  try{
+    let r = await fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/shape.json');
+    let s = await r.json();
+    if(s && s.id) window.aykaApplyShape(s);
+    else {
+      let local = null;
+      try{ local = JSON.parse(localStorage.getItem('ayka_shape')||'null'); }catch(e){}
+      if(local && local.id) window.aykaApplyShape(local);
+      else window.aykaApplyShape(window.AYKA_SHAPES[0]);
+    }
+  }catch(e){
+    try{ let local = JSON.parse(localStorage.getItem('ayka_shape')||'null'); if(local) window.aykaApplyShape(local); }catch(e2){}
+  }
+};
+</script>
+<style id="ayka-shapes-css">
+/* V9.6 SHAPES - only additions, base V9.3 untouched when data-shape=ayka-original */
+[data-shape="rounded-soft"] .product-card, [data-shape="rounded-soft"] button, [data-shape="rounded-soft"] img { border-radius: 28px !important; }
+[data-shape="sharp-square"] .product-card, [data-shape="sharp-square"] button, [data-shape="sharp-square"] img, [data-shape="sharp-square"] input { border-radius: 0px !important; }
+[data-shape="pill-capsule"] button { border-radius: 999px !important; padding-left: 22px !important; padding-right: 22px !important; }
+[data-shape="pill-capsule"] .product-card { border-radius: 28px !important; }
+[data-shape="minimal-flat"] .product-card, [data-shape="minimal-flat"] button { box-shadow: none !important; border: 1px solid #222 !important; }
+[data-shape="bold-border"] .product-card { border: 3px solid #fff !important; box-shadow: 0 0 0 1px #000 !important; }
+[data-shape="big-cards"] .product-card { transform: scale(1.02); padding: 18px !important; }
+[data-shape="list-view"] #products { display: flex !important; flex-direction: column !important; }
+[data-shape="list-view"] .product-card { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 14px !important; }
+[data-shape="compact-grid"] #products { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+[data-shape="compact-grid"] .product-card { padding: 8px !important; font-size: 12px !important; }
+[data-shape="luxury-wide"] #products { gap: 28px !important; }
+[data-shape="luxury-wide"] .product-card { padding: 24px !important; letter-spacing: 0.02em !important; }
+</style>
+<script>
+  // Auto-load shape on store start, poll every 5s for dashboard changes
+  (function(){ try{ window.aykaLoadShapeFromFirebase(); setInterval(window.aykaLoadShapeFromFirebase, 5000); }catch(e){} })();
+</script>
+
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
 </body></html>
