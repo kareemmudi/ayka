@@ -81,7 +81,8 @@
   function getFullByName(name){ if(!name) return null; var l=window.__AYKA_FULL_LIST||[]; for(var i=0;i<l.length;i++){ if(l[i].name===name) return l[i]; } return null; }
   function findDetailRoot(){
     var els=Array.prototype.slice.call(document.querySelectorAll('*'));
-    for(var i=0;i<els.length;i++){ if(els[i].children.length===0 && (els[i].textContent||'').trim()==='SELECT SIZE'){ return els[i].parentElement; } }
+    for(var i=0;i<els.length;i++){ var tx=(els[i].textContent||'').trim(); if(els[i].children.length===0 && tx.indexOf('SELECT SIZE')!==-1){ return els[i].parentElement; } }
+    for(var j=0;j<els.length;j++){ if(els[j].children.length===0 && (els[j].textContent||'').trim().indexOf('DESCRIPTION')!==-1){ return els[j].parentElement; } }
     return null;
   }
   function injectGallery(){
@@ -128,6 +129,9 @@
     }catch(e){}
   }
   window.__AYKA_INJECT_GALLERY=injectGallery;
+  document.addEventListener('click', function(){ setTimeout(injectGallery, 300); setTimeout(injectGallery, 800); setTimeout(injectGallery, 1500); }, true);
+  try{ var _obs=new MutationObserver(function(){ injectGallery(); }); _obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  setInterval(injectGallery, 1000);
   // Expose full product getter for detail page code / console
   window.__AYKA_GET_FULL=function(idOrName){ return window.__AYKA_FULL[String(idOrName)]||window.__AYKA_FULL[idOrName]||null; };
 })();
@@ -3235,7 +3239,7 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
           setLocal('ayka_products', pj);
           if(pollCount===1 && !sessionStorage.getItem('ayka_v7_fixed')){
             sessionStorage.setItem('ayka_v7_fixed','1');
-            setTimeout(()=>location.reload(), 800);
+            /* V4 no reload */;
           }
         }
       }
@@ -3272,7 +3276,7 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
         setLocal('ayka_orders_backup', oj);
         // Mark all fetched orders as already sent, so we never push them back
         orders.forEach(o=>{ if(o.id) sentOrderIds.add(o.id); });
-        if(!isFirst){ setTimeout(()=>location.reload(), 500); }
+        if(!isFirst){ /* V4 no reload */; }
       }
       
       // V9 SHIPPING - fetch shipping from Firebase, apply to checkout
@@ -3303,7 +3307,7 @@ Date: ${new Date(o.date).toLocaleString()}`),className:"bg-[#1a1a1d] hover:bg-[#
                     if(window.updateShipping) window.updateShipping();
                   }
                 }catch(e){}
-                setTimeout(()=>location.reload(), 800);
+                /* V4 no reload */;
               }
             }
           }catch(e){}
