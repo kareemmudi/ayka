@@ -25,7 +25,7 @@ try{
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/products.json').then(function(r){return r.json();}).then(function(d){
     var arr=[]; if(Array.isArray(d)) arr=d; else if(d) Object.keys(d).forEach(function(k){ var p=d[k]; p.id=p.id||k; arr.push(p); });
     arr=arr.filter(function(p){return p&&p.name});
-    if(arr.length){ try{ var light=arr.map(function(pp){ var o={}; Object.keys(pp).forEach(function(k){ if(k!=='gallery'&&k!=='images') o[k]=pp[k]; }); var m=pp.mainImage||pp.image||''; o.mainImage=m; o.image=m; o.images=m?[m]:[]; o.gallery=[]; return o; }); localStorage.setItem('ayka_products', JSON.stringify(light)); }catch(e){} try{ sessionStorage.setItem('ayka_products_backup', JSON.stringify(arr)); }catch(e){} }
+    if(arr.length){ try{ try{ localStorage.setItem('ayka_products', JSON.stringify(arr)); }catch(e){} }catch(e){} try{ sessionStorage.setItem('ayka_products_backup', JSON.stringify(arr)); }catch(e){} }
   }).catch(function(){});
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/shipping.json').then(function(r){return r.text();}).then(function(txt){ try{ localStorage.setItem('ayka_v2_shipping', txt); }catch(e){} }).catch(function(){});
 }catch(e){}
@@ -41,7 +41,7 @@ try{
     var main=p.mainImage||p.image||p.img||(Array.isArray(p.images)&&p.images[0])||'';
     o.mainImage=main; o.image=main; o.img=main;
     // RADICAL: keep FULL gallery - React's own detail renders it natively, no injection needed
-    // V8: list keeps ONLY main - gallery lives in Firebase, NOT localStorage (quota fix for 10-image product)
+    // V11: list keeps ONLY main (full quality) - gallery lives in /galleries/<id>, NOT in products.json, so list loads fast without losing quality
     o.images=main?[main]:[];
     o.gallery=[];
     return o;
@@ -3447,63 +3447,84 @@ try{
 }catch(e){}
 </script>
 <script>
-/* AYKA V8: detail gallery from Firebase directly, NOT localStorage */
+/* AYKA V12 FILE-BASED: products.json = only file IDs (10KB), each image = separate WebP FILE in /files/, loaded on demand, full quality, tiny size */
 (function(){
   var FB='https://ayka-store-9a2d5-default-rtdb.firebaseio.com';
-  var _cache=null, _fetching=false;
+  var _fileCache={};
+  function fetchFile(ref){
+    if(!ref || typeof ref!=='string' || ref.indexOf('file:')!==0) return Promise.resolve(ref);
+    var h=ref.slice(5); if(_fileCache[h]) return Promise.resolve(_fileCache[h]);
+    return fetch(FB+'/files/'+encodeURIComponent(h)+'.json').then(function(r){return r.json();}).then(function(d){ if(typeof d==='string'){ _fileCache[h]=d; return d; } return ref; }).catch(function(){ return ref; });
+  }
+  // Resolve main images in grid: replace file: refs with real WebP files, one by one (lazy)
+  function resolveGrid(){
+    try{
+      var prods=[]; try{ prods=JSON.parse(localStorage.getItem('ayka_products')||'[]'); }catch(e){}
+      // Grid images: if src is file: (shouldn't happen, React uses mainImage ref), resolve via img elements with data-file attr - instead, hook: find imgs with src starting file:
+      document.querySelectorAll('img').forEach(function(im){
+        var src=im.getAttribute('src')||'';
+        if(src.indexOf('file:')===0){ fetchFile(src).then(function(real){ if(real && real!==src) im.src=real; }); }
+      });
+      // Also resolve products in localStorage mainImage refs in background, so next render shows real images
+      var changed=false;
+      prods.forEach(function(p){
+        if(p.mainImage && typeof p.mainImage==='string' && p.mainImage.indexOf('file:')===0){
+          fetchFile(p.mainImage).then(function(real){ if(real!==p.mainImage){ p.mainImage=real; p.image=real; p.img=real; try{ localStorage.setItem('ayka_products', JSON.stringify(prods)); }catch(e){} } });
+        }
+      });
+    }catch(e){}
+  }
   function dedupe(arr){ var seen={}, out=[]; arr.forEach(function(u){ if(typeof u!=='string'||!u) return; if(seen[u]) return; seen[u]=1; out.push(u); }); return out; }
-  function findDetail(){
-    // V9: ADD TO CART only exists inside detail modal, SELECT SIZE exists in grid behind too
-    var btns=document.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){ if((btns[i].textContent||'').trim().indexOf('ADD TO CART')!==-1){ return btns[i]; } }
+  function findAddBtn(){ var btns=document.querySelectorAll('button'); for(var i=0;i<btns.length;i++){ if((btns[i].textContent||'').trim().indexOf('ADD TO CART')!==-1) return btns[i]; } return null; }
+  function findRoot(btn){ var root=btn; for(var u=0;u<10 && root.parentElement; u++){ root=root.parentElement; if(root.querySelector && root.querySelector('img') && root.textContent.indexOf('DESCRIPTION')!==-1) break; } return root; }
+  function getProdFromRoot(root){
+    try{ var prods=JSON.parse(localStorage.getItem('ayka_products')||'[]'); var txt=root.textContent||''; for(var i=0;i<prods.length;i++){ if(prods[i].name && txt.indexOf(prods[i].name)!==-1) return prods[i]; } }catch(e){}
     return null;
   }
-  function findDetailRootV9(btn){
-    var root=btn; for(var u=0;u<10 && root.parentElement; u++){ root=root.parentElement; if(root.querySelector && root.querySelector('img') && root.textContent.indexOf('DESCRIPTION')!==-1 && root.textContent.indexOf('SELECT SIZE')!==-1) break; }
-    return root;
-  }
-  function inject(full){
+  function inject(root, mainReal, galReals){
     try{
-      var _btn=findDetail(); if(!_btn) return; var detail=findDetailRootV9(_btn);
-      var root=detail; for(var u=0;u<6 && root.parentElement; u++){ root=root.parentElement; if(root.querySelector('img') && root.textContent.indexOf('DESCRIPTION')!==-1) break; }
-      if(root.querySelector('[data-ayka-v8]')) return;
+      if(root.querySelector('[data-ayka-v12]')) return;
       var mainImg=null, best=0; root.querySelectorAll('img').forEach(function(im){ try{ var r=im.getBoundingClientRect(); if(r.width*r.height>best){ best=r.width*r.height; mainImg=im; } }catch(e){} });
       if(!mainImg) return;
-      var gal=[]; if(full.mainImage) gal.push(full.mainImage);
-      (full.gallery||[]).forEach(function(x){ gal.push(x); });
-      (full.images||[]).forEach(function(x){ if(typeof x==='string') gal.push(x); });
-      gal=dedupe(gal);
-      if(gal.length<=1) return;
-      var strip=document.createElement('div'); strip.setAttribute('data-ayka-v8','1'); strip.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:center;';
-      gal.forEach(function(url,idx){
+      // Main itself may be file: ref, resolve it first
+      if(mainImg.getAttribute('src') && mainImg.getAttribute('src').indexOf('file:')===0){ fetchFile(mainImg.getAttribute('src')).then(function(real){ mainImg.src=real; }); }
+      var all=dedupe([mainReal].concat(galReals||[]));
+      if(all.length<=1) return;
+      var strip=document.createElement('div'); strip.setAttribute('data-ayka-v12','1'); strip.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:center;';
+      all.forEach(function(url,idx){
         var th=document.createElement('img'); th.src=url; th.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid '+(idx===0?'#3B82F6':'#222')+';cursor:pointer;';
         th.onclick=function(){ try{ mainImg.src=url; strip.querySelectorAll('img').forEach(function(x){x.style.border='2px solid #222';}); th.style.border='2px solid #3B82F6'; }catch(e){} };
         strip.appendChild(th);
       });
-      // Replace existing thumbnail (small img) container if exists, else append after main
       var small=null; root.querySelectorAll('img').forEach(function(im){ try{ var r=im.getBoundingClientRect(); if(im!==mainImg && r.width<150 && r.width>20) small=im; }catch(e){} });
       if(small && small.parentElement){ small.parentElement.innerHTML=''; small.parentElement.appendChild(strip); }
       else if(mainImg.parentElement) mainImg.parentElement.appendChild(strip);
     }catch(e){}
   }
-  function loadAndInject(){
+  function load(){
     try{
-      var _btn2=findDetail(); if(!_btn2) return; var detail=findDetailRootV9(_btn2);
-      var name=''; var heads=document.querySelectorAll('h1,h2,h3');
-      // Find name inside detail root
-      var root=detail; for(var u=0;u<6 && root.parentElement; u++){ root=root.parentElement; if(root.textContent.indexOf('DESCRIPTION')!==-1) break; }
-      var l=root.textContent||'';
-      if(_cache){ for(var i=0;i<_cache.length;i++){ if(_cache[i].name && l.indexOf(_cache[i].name)!==-1){ inject(_cache[i]); return; } } return; }
-      if(_fetching) return; _fetching=true;
-      fetch(FB+'/products.json').then(function(r){return r.json();}).then(function(d){
-        _fetching=false; var arr=[]; if(Array.isArray(d)) arr=d; else if(d) Object.keys(d).forEach(function(k){ var p=d[k]; p.id=p.id||k; arr.push(p); });
-        _cache=arr;
-        for(var j=0;j<arr.length;j++){ if(arr[j].name && l.indexOf(arr[j].name)!==-1){ inject(arr[j]); break; } }
-      }).catch(function(){ _fetching=false; });
+      resolveGrid();
+      var btn=findAddBtn(); if(!btn) return;
+      var root=findRoot(btn); var prod=getProdFromRoot(root); if(!prod) return;
+      // Gallery refs are in prod.gallery (file:...) - fetch each file
+      var refs=(prod.gallery||[]).concat(prod.images||[]).filter(function(x){ return typeof x==='string' && x.indexOf('file:')===0; });
+      // Also try /galleries/<id> fallback for old products
+      if(!refs.length){
+        fetch(FB+'/galleries/'+encodeURIComponent(String(prod.id))+'.json').then(function(r){return r.json();}).then(function(g){
+          var gal=Array.isArray(g)?g:(g?Object.values(g):[]);
+          Promise.all(gal.map(fetchFile)).then(function(reals){ inject(root, prod.mainImage, reals); });
+        }).catch(function(){});
+        return;
+      }
+      Promise.all(refs.map(fetchFile)).then(function(reals){
+        // Re-find root (may have re-rendered)
+        var btn2=findAddBtn(); if(!btn2) return; var root2=findRoot(btn2);
+        fetchFile(prod.mainImage||prod.image).then(function(mainReal){ inject(root2, mainReal, reals); });
+      });
     }catch(e){}
   }
-  document.addEventListener('click', function(){ setTimeout(loadAndInject, 400); setTimeout(loadAndInject, 1200); }, true);
-  setInterval(loadAndInject, 1500);
+  document.addEventListener('click', function(){ setTimeout(load, 400); setTimeout(load, 1200); }, true);
+  setInterval(load, 1500);
 })();
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
