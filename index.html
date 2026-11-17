@@ -77,16 +77,57 @@
     }catch(e){}
   }
   fetchFull(); setInterval(fetchFull, 8000);
-  // 3) When product detail opens, inject full gallery thumbnails from Firebase (main + gallery)
-  // We watch for new images in product detail: if a detail shows only 1 image but full has more, add thumbnails
-  window.__AYKA_INJECT_GALLERY=function(){
+  // 3) Full gallery in product detail: inject thumbnails from Firebase, bypassing React state (which is light)
+  function getFullByName(name){ if(!name) return null; var l=window.__AYKA_FULL_LIST||[]; for(var i=0;i<l.length;i++){ if(l[i].name===name) return l[i]; } return null; }
+  function injectGallery(){
     try{
-      // Find product detail container by looking for large image + name
-      var imgs=document.querySelectorAll('img');
-      // Do not inject in grid (many small images) - only if URL has product id or detail is open
-      // Heuristic: if there is a single large image area, we append gallery below it on click of main image
+      // Detail modal is the fixed overlay with a large image - find all large imgs
+      var imgs=Array.prototype.slice.call(document.querySelectorAll('img'));
+      // Find the detail main image: largest img on page that is inside a fixed/modal container, or the one with aspect square and big size
+      var main=null, mainRect=null;
+      imgs.forEach(function(im){
+        try{ var r=im.getBoundingClientRect(); if(r.width>250 && r.height>250){ if(!mainRect || r.width*r.height>mainRect.width*mainRect.height){ main=im; mainRect=r; } } }catch(e){}
+      });
+      if(!main) return;
+      // Don't inject in grid: if there are many large imgs (grid), skip - detail has only 1 large main img + small thumbs
+      // Count large imgs: if >3, it's grid, not detail
+      var largeCount=imgs.filter(function(im){ try{ var r=im.getBoundingClientRect(); return r.width>250 && r.height>250; }catch(e){ return false; } }).length;
+      if(largeCount>2) return;
+      // Find product name near main image: look up ancestors for a heading with product name
+      var container=main.parentElement; for(var d=0;d<5 && container; d++){ if(container.querySelector('h1,h2,h3')) break; container=container.parentElement; }
+      if(!container) container=main.parentElement;
+      if(!container || container.querySelector('[data-ayka-gallery]')) return;
+      // Get product name: the largest heading in the detail container's parent
+      var root=main; for(var u=0;u<6 && root.parentElement; u++){ root=root.parentElement; }
+      var headings=root.querySelectorAll('h1,h2,h3');
+      var name=null;
+      for(var h=0;h<headings.length;h++){ var txt=(headings[h].textContent||'').trim(); if(txt && txt.length>1 && txt.length<80){ name=txt; break; } }
+      if(!name) return;
+      var full=getFullByName(name);
+      if(!full) return;
+      var gal=[]; if(full.mainImage) gal.push(full.mainImage);
+      (full.gallery||[]).forEach(function(g){ if(g && gal.indexOf(g)===-1) gal.push(g); });
+      (full.images||[]).forEach(function(g){ if(g && gal.indexOf(g)===-1 && typeof g==='string' && g.indexOf('data:')===0) gal.push(g); });
+      if(gal.length<=1) return;
+      var strip=document.createElement('div');
+      strip.setAttribute('data-ayka-gallery','1');
+      strip.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;';
+      gal.forEach(function(url, idx){
+        var th=document.createElement('img');
+        th.src=url; th.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid '+(idx===0?'#3B82F6':'#222')+';cursor:pointer;';
+        th.onclick=function(){ try{ main.src=url; var all=strip.querySelectorAll('img'); all.forEach(function(x){ x.style.border='2px solid #222'; }); th.style.border='2px solid #3B82F6'; }catch(e){} };
+        strip.appendChild(th);
+      });
+      // Insert strip after main image's parent
+      var parent=main.parentElement;
+      if(parent) parent.appendChild(strip);
+      else container.appendChild(strip);
     }catch(e){}
-  };
+  }
+  // Run on click (product card click opens detail) + on DOM changes
+  document.addEventListener('click', function(){ setTimeout(injectGallery, 400); setTimeout(injectGallery, 1200); }, true);
+  try{ var _obs=new MutationObserver(function(){ injectGallery(); }); _obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  window.__AYKA_INJECT_GALLERY=injectGallery;
   // Expose full product getter for detail page code / console
   window.__AYKA_GET_FULL=function(idOrName){ return window.__AYKA_FULL[String(idOrName)]||window.__AYKA_FULL[idOrName]||null; };
 })();
