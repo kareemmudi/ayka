@@ -25,9 +25,7 @@ try{
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/products.json').then(function(r){return r.json();}).then(function(d){
     var arr=[]; if(Array.isArray(d)) arr=d; else if(d) Object.keys(d).forEach(function(k){ var p=d[k]; p.id=p.id||k; arr.push(p); });
     arr=arr.filter(function(p){return p&&p.name});
-    if(arr.length){ try{ try{ localStorage.setItem('ayka_products', JSON.stringify(arr)); }catch(e){} }catch(e){} try{ sessionStorage.setItem('ayka_products_backup', JSON.stringify(arr)); }catch(e){} 
-    // V15 FINAL: React already mounted with 0 - reload ONCE so it reads FULL cache with gallery natively
-    try{ if(!sessionStorage.getItem('ayka_v15_reloaded') && document.body.textContent.indexOf('No products')!==-1){ sessionStorage.setItem('ayka_v15_reloaded','1'); location.reload(); } }catch(e){} }
+    if(arr.length){ try{ try{ localStorage.setItem('ayka_products', JSON.stringify(arr)); }catch(e){} }catch(e){} try{ sessionStorage.setItem('ayka_products_backup', JSON.stringify(arr)); }catch(e){} }
   }).catch(function(){});
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/shipping.json').then(function(r){return r.text();}).then(function(txt){ try{ localStorage.setItem('ayka_v2_shipping', txt); }catch(e){} }).catch(function(){});
 }catch(e){}
@@ -42,10 +40,10 @@ try{
     var o={}; Object.keys(p).forEach(function(k){ if(k!=='gallery') o[k]=p[k]; });
     var main=p.mainImage||p.image||p.img||(Array.isArray(p.images)&&p.images[0])||'';
     o.mainImage=main; o.image=main; o.img=main;
-    // V15 FINAL: keep FULL gallery - React renders it natively, no injection, no file: refs
-    var _fullGal=[]; if(Array.isArray(p.gallery)) _fullGal=_fullGal.concat(p.gallery); if(Array.isArray(p.images)) _fullGal=_fullGal.concat(p.images); _fullGal=_fullGal.filter(function(u){ return typeof u==='string' && u.startsWith('data:'); });
-    // dedupe, main first
-    var _seen={}; var _ded=[]; [main].concat(_fullGal).forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _ded.push(u); } });
+    // FIX: keep FULL gallery - React renders it natively. This was the bug: gallery was stripped to [] so detail showed only main
+    var _gal=[]; if(Array.isArray(p.gallery)) _gal=_gal.concat(p.gallery); if(Array.isArray(p.images)) _gal=_gal.concat(p.images);
+    // Resolve file: refs are handled by repair (real images) - keep only real data: images, keep file: refs too so detail can resolve them
+    var _seen={}; var _ded=[]; [main].concat(_gal).forEach(function(u){ if(typeof u==='string'&&u&&!_seen[u]){ _seen[u]=1; _ded.push(u); } });
     o.images=_ded; o.gallery=_ded.slice(1);
     return o;
   }
