@@ -25,6 +25,8 @@ try{
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/products.json').then(function(r){return r.json();}).then(function(d){
     var arr=[]; if(Array.isArray(d)) arr=d; else if(d) Object.keys(d).forEach(function(k){ var p=d[k]; p.id=p.id||k; arr.push(p); });
     arr=arr.filter(function(p){return p&&p.name});
+    // V14 STORE FIX: strip heavy base64 gallery before caching - keep main real, gallery = file: refs only
+    arr=arr.map(function(p){ var o={}; Object.keys(p).forEach(function(k){ if(k!=='gallery' && k!=='images') o[k]=p[k]; }); o.mainImage=p.mainImage||p.image||''; o.image=o.mainImage; o.img=o.mainImage; o.gallery=(p.gallery||[]).filter(function(u){ return typeof u==='string' && (u.indexOf('file:')===0 || !u.startsWith('data:')); }); o.images=[o.mainImage].concat(o.gallery); return o; });
     if(arr.length){ try{ try{ localStorage.setItem('ayka_products', JSON.stringify(arr)); }catch(e){} }catch(e){} try{ sessionStorage.setItem('ayka_products_backup', JSON.stringify(arr)); }catch(e){} }
   }).catch(function(){});
   fetch('https://ayka-store-9a2d5-default-rtdb.firebaseio.com/shipping.json').then(function(r){return r.text();}).then(function(txt){ try{ localStorage.setItem('ayka_v2_shipping', txt); }catch(e){} }).catch(function(){});
@@ -3475,8 +3477,9 @@ try{
     }catch(e){}
   }
   function dedupe(arr){ var seen={}, out=[]; arr.forEach(function(u){ if(typeof u!=='string'||!u) return; if(seen[u]) return; seen[u]=1; out.push(u); }); return out; }
-  function findAddBtn(){ var btns=document.querySelectorAll('button'); for(var i=0;i<btns.length;i++){ if((btns[i].textContent||'').trim().indexOf('ADD TO CART')!==-1) return btns[i]; } return null; }
-  function findRoot(btn){ var root=btn; for(var u=0;u<10 && root.parentElement; u++){ root=root.parentElement; if(root.querySelector && root.querySelector('img') && root.textContent.indexOf('DESCRIPTION')!==-1) break; } return root; }
+  function findDetailRoot(){ var els=document.querySelectorAll('div'); for(var i=els.length-1;i>=0;i--){ var t=els[i].textContent||''; if(t.indexOf('SELECT SIZE')!==-1 && t.indexOf('DESCRIPTION')!==-1 && els[i].querySelector('img')) return els[i]; } var btns=document.querySelectorAll('button'); for(var j=0;j<btns.length;j++){ if((btns[j].textContent||'').trim().indexOf('ADD TO CART')!==-1) return btns[j]; } return null; }
+  function findAddBtn(){ return findDetailRoot(); }
+  function findRoot(btn){ return btn; }
   function getProdFromRoot(root){
     try{ var prods=JSON.parse(localStorage.getItem('ayka_products')||'[]'); var txt=root.textContent||''; for(var i=0;i<prods.length;i++){ if(prods[i].name && txt.indexOf(prods[i].name)!==-1) return prods[i]; } }catch(e){}
     return null;
@@ -3504,8 +3507,8 @@ try{
   function load(){
     try{
       resolveGrid();
-      var btn=findAddBtn(); if(!btn) return;
-      var root=findRoot(btn); var prod=getProdFromRoot(root); if(!prod) return;
+      var root=findDetailRoot(); if(!root) return;
+      var prod=getProdFromRoot(root); if(!prod) return;
       // Gallery refs are in prod.gallery (file:...) - fetch each file
       var refs=(prod.gallery||[]).concat(prod.images||[]).filter(function(x){ return typeof x==='string' && x.indexOf('file:')===0; });
       // Also try /galleries/<id> fallback for old products
@@ -3518,7 +3521,7 @@ try{
       }
       Promise.all(refs.map(fetchFile)).then(function(reals){
         // Re-find root (may have re-rendered)
-        var btn2=findAddBtn(); if(!btn2) return; var root2=findRoot(btn2);
+        var root2=findDetailRoot(); if(!root2) return;
         fetchFile(prod.mainImage||prod.image).then(function(mainReal){ inject(root2, mainReal, reals); });
       });
     }catch(e){}
