@@ -72,50 +72,40 @@ async function loadShipping(){
 window.updateShipping=function(){ var sel=document.getElementById('govSelect'); var opt=sel.options[sel.selectedIndex]; var cost=opt?Number(opt.getAttribute('data-cost'))||0:0; var sub=cart.reduce(function(a,i){ return a+i.price*i.qty; },0); document.getElementById('tSub').textContent=sub+' EGP'; document.getElementById('tShip').textContent=cost+' EGP'; document.getElementById('tTotal').textContent=(sub+cost)+' EGP'; };
 function showSkeletons(){ var grid=document.getElementById('grid'); grid.innerHTML=''; for(var i=0;i<4;i++){ var d=document.createElement('div'); d.className='card'; d.innerHTML='<div style="aspect-ratio:1/1;background:#1a1a1d"></div><div class="b"><div style="height:14px;background:#222;border-radius:6px;width:60%"></div><div style="height:12px;background:#1a1a1d;border-radius:6px;width:80%;margin-top:8px"></div></div>'; grid.appendChild(d); } document.getElementById('count').textContent='Loading...'; }
 async function loadProducts(){
-  // RADICAL: NEVER wait for Firebase to show products. Show persistent cache in <100ms, Firebase updates in background.
+  // RADICAL LITE-FIRST: fetch tiny products_lite (name/price/stock only, no images) -> render in <0.5s, then upgrade images in background
   var cached=null;
   try{ cached=JSON.parse(localStorage.getItem('ayka_products_v1')||'null'); }catch(e){}
-  if(!cached){ try{ var _c=await caches.open('ayka-v1'); var _r=await _c.match('ayka-products'); if(_r) cached=await _r.json(); }catch(e){} }
   if(cached && Array.isArray(cached) && cached.length){ products=cached; document.getElementById('loading').style.display='none'; renderCats(); render('ALL'); }
   else { showSkeletons(); }
-  // Background: fetch fresh from Firebase, update screen + cache silently (no skeleton, no flash)
+  // 1) Try lite (KB, not MB)
+  try{
+    var rl=await fetch(FB+'/products_lite.json'); var jl=await rl.json(); var lite=Array.isArray(jl)?jl.filter(Boolean):Object.values(jl||[]).filter(Boolean);
+    if(lite.length){
+      // Merge lite with cached images if we have them, so cards show instantly with images
+      var imgMap={}; (cached||[]).forEach(function(pp){ if(pp.id) imgMap[String(pp.id)]=pp._main; });
+      lite.forEach(function(pp){ if(imgMap[String(pp.id)]) pp._main=imgMap[String(pp.id)]; pp._galleryRaw=pp._galleryRaw||[]; });
+      products=lite;
+      try{ localStorage.setItem('ayka_products_v1', JSON.stringify(lite)); }catch(e){}
+      document.getElementById('loading').style.display='none'; renderCats(); render('ALL');
+    }
+  }catch(e){}
+  // 2) Background: full products (with images) - updates screen silently, no flash
   try{
     var r=await fetch(FB+'/products.json'); var j=await r.json(); var list=Array.isArray(j)?j.filter(Boolean):Object.values(j||[]).filter(Boolean);
     await Promise.all(list.map(async function(pp){ pp._main=await fetchFile(pp.mainImage||pp.image||''); pp._galleryRaw=(pp.gallery||[]).concat(pp.images||[]); }));
     var fresh=list.filter(function(pp){ return pp&&pp.name; });
     if(fresh.length){
-      var oldJson=JSON.stringify(products.map(function(x){return x.id;}));
-      var newJson=JSON.stringify(fresh.map(function(x){return x.id;}));
+      var oldIds=JSON.stringify(products.map(function(x){return x.id;}));
+      var newIds=JSON.stringify(fresh.map(function(x){return x.id;}));
       products=fresh;
       try{ localStorage.setItem('ayka_products_v1', JSON.stringify(fresh)); }catch(e){}
       try{ var _cc=await caches.open('ayka-v1'); await _cc.put('ayka-products', new Response(JSON.stringify(fresh), {headers:{'Content-Type':'application/json'}})); }catch(e){}
       try{ sessionStorage.setItem('ayka_display_cache', JSON.stringify(fresh)); }catch(e){}
       document.getElementById('loading').style.display='none';
-      // Only re-render if products changed (new product / price / stock) so screen doesn't flicker
-      if(oldJson!==newJson || !cached){ renderCats(); render('ALL'); }
+      if(oldIds!==newIds){ renderCats(); render('ALL'); } else { renderCats(); render('ALL'); }
     }
   }catch(e){ if(!cached) document.getElementById('loading').textContent='Failed to load, please refresh'; }
 }
-
-function setGlow(card){ document.querySelectorAll('.grid .card.glow').forEach(function(x){ if(x!==card) x.classList.remove('glow'); }); if(card && !card.classList.contains('glow')) card.classList.add('glow'); }
-function clearGlow(){ document.querySelectorAll('.grid .card.glow').forEach(function(x){ x.classList.remove('glow'); }); }
-function bindGlow(){
-  document.querySelectorAll('.grid .card').forEach(function(c){
-    c.addEventListener('mouseenter', function(){ setGlow(c); });
-    c.addEventListener('mouseleave', function(){ c.classList.remove('glow'); });
-  });
-}
-(function(){
-  document.addEventListener('touchmove', function(e){
-    if(!e.touches || !e.touches[0]) return;
-    var tt=e.touches[0];
-    var el=document.elementFromPoint(tt.clientX, tt.clientY);
-    var card=el ? el.closest('.card') : null;
-    setGlow(card);
-  }, {passive:true});
-  document.addEventListener('touchend', function(){ setTimeout(clearGlow, 350); }, {passive:true});
-  document.addEventListener('touchcancel', clearGlow, {passive:true});
-})();
 function renderCats(){
  var cats=['ALL']; products.forEach(function(p){ var c=(p.category||'CLOTHING').toUpperCase(); if(cats.indexOf(c)===-1) cats.push(c); }); var el=document.getElementById('cats'); el.innerHTML=''; cats.forEach(function(c){ var b=document.createElement('button'); b.textContent=c; if(c==='ALL') b.className='on'; b.onclick=function(){ document.querySelectorAll('#cats button').forEach(function(x){x.className='';}); b.className='on'; render(c); }; el.appendChild(b); }); }
 function colorHex(n){ var m={black:'#000',white:'#fff',blue:'#3B82F6',grey:'#888',gray:'#888',grey2:'#aaa',brown:'#8B4513',beige:'#D2B48C',green:'#22c55e',red:'#ef4444',yellow:'#eab308',pink:'#ec4899',orange:'#f97316',navy:'#1e3a8a',khaki:'#BDB76B',maroon:'#800000'}; var k=String(n||'').toLowerCase().trim(); return m[k]||'#888'; }
