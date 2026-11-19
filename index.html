@@ -28,8 +28,8 @@ header input{flex:1;background:#111113;border:1px solid #222;color:#fff;padding:
 .hero{padding:36px 22px 14px;width:100%;max-width:100%;position:relative;overflow:hidden}.hero::before{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,.35),transparent 70%);top:-100px;right:-100px;pointer-events:none}.hero h1{font-size:52px;line-height:.95;font-weight:900;position:relative}.hero h1 span{color:#3B82F6;text-shadow:0 0 24px rgba(59,130,246,.8)}.hero p{color:#888;margin:10px 0 16px}.hero button{background:#3B82F6;color:#fff;border:0;padding:15px 30px;border-radius:999px;font-weight:800;cursor:pointer}
 .cats{display:flex;gap:8px;padding:12px 16px;overflow:auto;position:sticky;top:50px;z-index:40;background:#0a0a0b}.cats button{white-space:nowrap;background:#111113;color:#888;border:1px solid #222;padding:9px 16px;border-radius:999px;cursor:pointer}.cats button.on{background:#3B82F6;color:#fff;border-color:#3B82F6}
 .count{padding:0 16px;color:#888;font-size:12px;letter-spacing:1px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px}@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
-.card{background:#111113;border:2px solid #222;border-radius:20px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative}.grid .card{transition:transform .15s,box-shadow .15s,border-color .15s} .grid .card.glow{transform:translateY(-4px);border-color:#3B82F6!important;box-shadow:0 0 18px rgba(59,130,246,.9),0 0 38px rgba(59,130,246,.45)!important}.card img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#000;transition:transform .3s}.card:hover img{transform:scale(1.05)}.card .b{padding:12px}.badge{font-size:10px;color:#888;letter-spacing:1px}.stock{float:right;background:#064e3b;color:#a7f3d0;font-size:10px;padding:3px 8px;border-radius:999px}.stock.out{background:#7f1d1d;color:#fecaca}.card h3{font-size:16px;margin:10px 0 4px}.card p{font-size:12px;color:#888;line-height:1.5;height:36px;overflow:hidden}.price{margin-top:8px;font-weight:800}.price .old{color:#666;text-decoration:line-through;font-weight:400;font-size:12px}.disc{background:#ef4444;color:#fff;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:6px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;overflow:auto;z-index:80}.modal.open{display:block}.sheet{background:#111113;border:1px solid rgba(59,130,246,.35);border-radius:20px;margin:16px;overflow:hidden;box-shadow:0 0 12px rgba(59,130,246,.25)}.sheet img.main{width:100%;aspect-ratio:1/1;object-fit:cover;background:#000}.thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:12px}.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid #222;cursor:pointer}.thumbs img.on{border-color:#3B82F6}.sheet .pad{padding:16px}.sheet h2{font-size:22px}.sheet .pr{font-size:19px;font-weight:800;margin:8px 0}.sheet .desc{color:#888;font-size:13px;line-height:1.7}.opt{margin-top:16px}.opt b{font-size:12px}.opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.opts button{background:#1a1a1d;color:#fff;border:1px solid #333;padding:10px 16px;border-radius:999px;cursor:pointer}.opts button.on{background:#3B82F6;border-color:#3B82F6}.warn{color:#facc15;font-size:12px;margin-top:6px;display:none}.add{width:100%;background:#3B82F6;color:#fff;border:0;padding:15px;border-radius:12px;font-weight:800;margin-top:18px;cursor:pointer}
+.card{background:#111113;border:2px solid #222;border-radius:20px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative}.grid .card{transition:transform .15s,box-shadow .15s,border-color .15s} .grid .card.glow{transform:translateY(-4px);border-color:#3B82F6!important;box-shadow:0 0 18px rgba(59,130,246,.9),0 0 38px rgba(59,130,246,.45)!important}.card img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#000;color:transparent;transition:transform .3s}.card:hover img{transform:scale(1.05)}.card .b{padding:12px}.badge{font-size:10px;color:#888;letter-spacing:1px}.stock{float:right;background:#064e3b;color:#a7f3d0;font-size:10px;padding:3px 8px;border-radius:999px}.stock.out{background:#7f1d1d;color:#fecaca}.card h3{font-size:16px;margin:10px 0 4px}.card p{font-size:12px;color:#888;line-height:1.5;height:36px;overflow:hidden}.price{margin-top:8px;font-weight:800}.price .old{color:#666;text-decoration:line-through;font-weight:400;font-size:12px}.disc{background:#ef4444;color:#fff;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:6px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;overflow:auto;z-index:80}.modal.open{display:block}.sheet{background:#111113;border:1px solid rgba(59,130,246,.35);border-radius:20px;margin:16px;overflow:hidden;box-shadow:0 0 18px rgba(59,130,246,.9),0 0 38px rgba(59,130,246,.45)}.sheet img.main{width:100%;aspect-ratio:1/1;object-fit:cover;background:#000}.thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:12px}.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid #222;cursor:pointer}.thumbs img.on{border-color:#3B82F6}.sheet .pad{padding:16px}.sheet h2{font-size:22px}.sheet .pr{font-size:19px;font-weight:800;margin:8px 0}.sheet .desc{color:#888;font-size:13px;line-height:1.7}.opt{margin-top:16px}.opt b{font-size:12px}.opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.opts button{background:#1a1a1d;color:#fff;border:1px solid #333;padding:10px 16px;border-radius:999px;cursor:pointer}.opts button.on{background:#3B82F6;border-color:#3B82F6}.warn{color:#facc15;font-size:12px;margin-top:6px;display:none}.add{width:100%;background:#3B82F6;color:#fff;border:0;padding:15px;border-radius:12px;font-weight:800;margin-top:18px;cursor:pointer}
 .close{position:fixed;top:18px;right:18px;background:#000;color:#fff;border:0;width:38px;height:38px;border-radius:50%;font-size:18px;z-index:90;cursor:pointer;display:none}
 .cart{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);background:#111113;border-left:1px solid #222;z-index:90;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column}.cart.open{transform:none}.cart h3{padding:16px;border-bottom:1px solid #222}.cart .items{flex:1;overflow:auto;padding:12px}.citem{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #222}.citem img{width:64px;height:64px;object-fit:cover;border-radius:10px}.citem b{font-size:14px}.citem small{color:#888}.qty{display:flex;gap:8px;align-items:center;margin-top:6px}.qty button{background:#222;color:#fff;border:0;width:26px;height:26px;border-radius:50%;cursor:pointer}.cart .foot{padding:16px;border-top:1px solid #222}.cart .foot button{width:100%;background:#3B82F6;color:#fff;border:0;padding:14px;border-radius:12px;font-weight:800;cursor:pointer}
 .check{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;overflow:auto;z-index:95}.check.open{display:block}.check .box{background:#111113;border:1px solid #222;border-radius:20px;margin:16px;padding:18px}.check label{display:block;font-size:12px;color:#888;margin:12px 0 6px}.check input,.check select,.check textarea{width:100%;background:#0a0a0b;border:1px solid #222;color:#fff;padding:12px;border-radius:10px;outline:none}.tot{background:#0a0a0b;border:1px solid #222;border-radius:12px;padding:12px;margin-top:14px;font-size:14px;line-height:1.9}.tot b{float:right}.place{width:100%;background:#3B82F6;color:#fff;border:0;padding:15px;border-radius:12px;font-weight:800;margin-top:14px;cursor:pointer}.cod{text-align:center;color:#888;font-size:12px;margin-top:10px}
@@ -72,38 +72,35 @@ async function loadShipping(){
 window.updateShipping=function(){ var sel=document.getElementById('govSelect'); var opt=sel.options[sel.selectedIndex]; var cost=opt?Number(opt.getAttribute('data-cost'))||0:0; var sub=cart.reduce(function(a,i){ return a+i.price*i.qty; },0); document.getElementById('tSub').textContent=sub+' EGP'; document.getElementById('tShip').textContent=cost+' EGP'; document.getElementById('tTotal').textContent=(sub+cost)+' EGP'; };
 function showSkeletons(){ var grid=document.getElementById('grid'); grid.innerHTML=''; for(var i=0;i<4;i++){ var d=document.createElement('div'); d.className='card'; d.innerHTML='<div style="aspect-ratio:1/1;background:#1a1a1d"></div><div class="b"><div style="height:14px;background:#222;border-radius:6px;width:60%"></div><div style="height:12px;background:#1a1a1d;border-radius:6px;width:80%;margin-top:8px"></div></div>'; grid.appendChild(d); } document.getElementById('count').textContent='Loading...'; }
 async function loadProducts(){
-  // RADICAL LITE-FIRST: fetch tiny products_lite (name/price/stock only, no images) -> render in <0.5s, then upgrade images in background
   var cached=null;
   try{ cached=JSON.parse(localStorage.getItem('ayka_products_v1')||'null'); }catch(e){}
   if(cached && Array.isArray(cached) && cached.length){ products=cached; document.getElementById('loading').style.display='none'; renderCats(); render('ALL'); }
   else { showSkeletons(); }
-  // 1) Try lite (KB, not MB)
   try{
     var rl=await fetch(FB+'/products_lite.json'); var jl=await rl.json(); var lite=Array.isArray(jl)?jl.filter(Boolean):Object.values(jl||[]).filter(Boolean);
     if(lite.length){
-      // Merge lite with cached images if we have them, so cards show instantly with images
       var imgMap={}; (cached||[]).forEach(function(pp){ if(pp.id) imgMap[String(pp.id)]=pp._main; });
-      lite.forEach(function(pp){ if(imgMap[String(pp.id)]) pp._main=imgMap[String(pp.id)]; pp._galleryRaw=pp._galleryRaw||[]; });
+      lite.forEach(function(pp){ if(imgMap[String(pp.id)]) pp._main=imgMap[String(pp.id)]; pp._galleryRaw=pp._galleryRaw||pp.gallery||pp.images||[]; });
       products=lite;
-      try{ localStorage.setItem('ayka_products_v1', JSON.stringify(lite)); }catch(e){}
       document.getElementById('loading').style.display='none'; renderCats(); render('ALL');
     }
   }catch(e){}
-  // 2) Background: full products (with images) - updates screen silently, no flash
+  // STREAMING: fetch full products, but update each card the moment its image arrives - no waiting for all
   try{
     var r=await fetch(FB+'/products.json'); var j=await r.json(); var list=Array.isArray(j)?j.filter(Boolean):Object.values(j||[]).filter(Boolean);
-    await Promise.all(list.map(async function(pp){ pp._main=await fetchFile(pp.mainImage||pp.image||''); pp._galleryRaw=(pp.gallery||[]).concat(pp.images||[]); }));
-    var fresh=list.filter(function(pp){ return pp&&pp.name; });
-    if(fresh.length){
-      var oldIds=JSON.stringify(products.map(function(x){return x.id;}));
-      var newIds=JSON.stringify(fresh.map(function(x){return x.id;}));
-      products=fresh;
-      try{ localStorage.setItem('ayka_products_v1', JSON.stringify(fresh)); }catch(e){}
-      try{ var _cc=await caches.open('ayka-v1'); await _cc.put('ayka-products', new Response(JSON.stringify(fresh), {headers:{'Content-Type':'application/json'}})); }catch(e){}
-      try{ sessionStorage.setItem('ayka_display_cache', JSON.stringify(fresh)); }catch(e){}
-      document.getElementById('loading').style.display='none';
-      if(oldIds!==newIds){ renderCats(); render('ALL'); } else { renderCats(); render('ALL'); }
-    }
+    list.forEach(function(pp, idx){
+      (async function(){
+        var m=await fetchFile(pp.mainImage||pp.image||'');
+        pp._main=m; pp._galleryRaw=(pp.gallery||[]).concat(pp.images||[]);
+        // update this product in products list and its card image in place, no full re-render, no flash
+        var pos=products.findIndex(function(x){ return String(x.id)===String(pp.id) || x.name===pp.name; });
+        if(pos!==-1){ products[pos]._main=m; products[pos]._galleryRaw=pp._galleryRaw; products[pos].mainImage=pp.mainImage; products[pos].image=pp.image; products[pos].gallery=pp.gallery; }
+        else { products.push(pp); renderCats(); render('ALL'); return; }
+        var cards=document.querySelectorAll('.grid .card');
+        if(cards[pos]){ var im=cards[pos].querySelector('img'); if(im) im.src=m; }
+        if(idx===list.length-1){ try{ localStorage.setItem('ayka_products_v1', JSON.stringify(products)); }catch(e){} }
+      })();
+    });
   }catch(e){ if(!cached) document.getElementById('loading').textContent='Failed to load, please refresh'; }
 }
 function renderCats(){
@@ -111,6 +108,14 @@ function renderCats(){
 function colorHex(n){ var m={black:'#000',white:'#fff',blue:'#3B82F6',grey:'#888',gray:'#888',grey2:'#aaa',brown:'#8B4513',beige:'#D2B48C',green:'#22c55e',red:'#ef4444',yellow:'#eab308',pink:'#ec4899',orange:'#f97316',navy:'#1e3a8a',khaki:'#BDB76B',maroon:'#800000'}; var k=String(n||'').toLowerCase().trim(); return m[k]||'#888'; }
 function openProductById(id){ var p=products.find(function(x){ return String(x.id)===String(id); }); if(p) openProduct(p); }
 function stockOf(p){ if(Array.isArray(p.variants)){ var s=0; p.variants.forEach(function(v){ s+=Number(v.stock)||0; }); return s; } return p.stock!=null?Number(p.stock):999; }
+function bindGlow(){
+  var cards=document.querySelectorAll('.grid .card');
+  cards.forEach(function(card){
+    card.addEventListener('mouseenter', function(){ document.querySelectorAll('.grid .card.glow').forEach(function(c){ c.classList.remove('glow'); }); card.classList.add('glow'); });
+    card.addEventListener('touchstart', function(){ document.querySelectorAll('.grid .card.glow').forEach(function(c){ c.classList.remove('glow'); }); card.classList.add('glow'); }, {passive:true});
+    card.addEventListener('click', function(){ document.querySelectorAll('.grid .card.glow').forEach(function(c){ c.classList.remove('glow'); }); card.classList.add('glow'); });
+  });
+}
 function render(f){
   var q=(document.getElementById('search').value||'').toLowerCase();
   var grid=document.getElementById('grid'); grid.innerHTML='';
@@ -136,7 +141,7 @@ async function openProduct(p){
   document.getElementById('mColors').innerHTML=colors.map(function(c){ return '<span class="dot dot-lg" title="'+c+'" style="background:'+colorHex(c)+'" onclick="pickColorDot(this,\''+c+'\')"></span>'; }).join('')||'<span style="color:#888">Default</span>';
   document.getElementById('modal').classList.add('open'); document.getElementById('closeBtn').style.display='block';
   var raw=[p._main].concat(p._galleryRaw||[]); var uniq=[], seen={}; raw.forEach(function(u){ if(typeof u==='string'&&u&&!seen[u]){ seen[u]=1; uniq.push(u); } });
-  var reals=[]; for(var i=0;i<uniq.length;i++){ reals.push(await fetchFile(uniq[i])); } reals=reals.filter(function(u){ return typeof u==='string'&&u.startsWith('data:'); }); if(!reals.length) reals=[p._main];
+  var reals=await Promise.all(uniq.map(function(u){ return fetchFile(u); })); reals=reals.filter(function(u){ return typeof u==='string'&&u.startsWith('data:'); }); if(!reals.length) reals=[p._main];
   document.getElementById('mImg').src=reals[0]; var th=document.getElementById('thumbs'); th.innerHTML=''; reals.forEach(function(u,idx){ var im=document.createElement('img'); im.src=u; im.loading='lazy'; if(idx===0) im.className='on'; im.onclick=function(){ document.getElementById('mImg').src=u; th.querySelectorAll('img').forEach(function(x){x.className='';}); im.className='on'; }; th.appendChild(im); });
 }
 function pickSize(b,s){ selSize=s; document.querySelectorAll('#mSizes button').forEach(function(x){x.className='';}); b.className='on'; document.getElementById('warnSize').style.display='none'; }
