@@ -141,7 +141,7 @@ async function openProduct(p){
   document.getElementById('mColors').innerHTML=colors.map(function(c){ return '<span class="dot dot-lg" title="'+c+'" style="background:'+colorHex(c)+'" onclick="pickColorDot(this,\''+c+'\')"></span>'; }).join('')||'<span style="color:#888">Default</span>';
   document.getElementById('modal').classList.add('open'); document.getElementById('closeBtn').style.display='block';
   var raw=[p._main].concat(p._galleryRaw||[]); var uniq=[], seen={}; raw.forEach(function(u){ if(typeof u==='string'&&u&&!seen[u]){ seen[u]=1; uniq.push(u); } });
-  var reals=await Promise.all(uniq.map(function(u){ return fetchFile(u); })); reals=reals.filter(function(u){ return typeof u==='string'&&u.startsWith('data:'); }); if(!reals.length) reals=[p._main];
+  var reals=await Promise.all(uniq.map(function(u){ return fetchFile(u); })); reals=reals.filter(function(u){ return typeof u==='string'&&(u.startsWith('data:')||u.startsWith('http')); }); if(!reals.length) reals=[p._main];
   document.getElementById('mImg').src=reals[0]; var th=document.getElementById('thumbs'); th.innerHTML=''; reals.forEach(function(u,idx){ var im=document.createElement('img'); im.src=u; im.loading='lazy'; if(idx===0) im.className='on'; im.onclick=function(){ document.getElementById('mImg').src=u; th.querySelectorAll('img').forEach(function(x){x.className='';}); im.className='on'; }; th.appendChild(im); });
 }
 function pickSize(b,s){ selSize=s; document.querySelectorAll('#mSizes button').forEach(function(x){x.className='';}); b.className='on'; document.getElementById('warnSize').style.display='none'; }
