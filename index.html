@@ -135,10 +135,13 @@ function render(f){
   var grid=document.getElementById('grid'); grid.innerHTML='';
   var show=products.filter(function(p){ if(f!=='ALL' && (p.category||'CLOTHING').toUpperCase().indexOf(f)===-1) return false; if(q && p.name.toLowerCase().indexOf(q)===-1) return false; return true; });
   // AYKA ORDER: in ALL, group by category, then by manual order (p.order) you set in dashboard. In a single category, only manual order applies.
+  // AYKA ORDER V12: global order wins. If you set order 1,2,3 in dashboard, ALL shows exactly 1,2,3,4 across all categories.
+  // Products with no order go after, grouped by category.
   var CAT_ORDER=['SHOES','HOODIES','ENTERTAINMENT','CLOTHING'];
   function catRank(c){ var i=CAT_ORDER.indexOf((c||'CLOTHING').toUpperCase()); return i===-1?99:i; }
   function ordOf(x){ var n=parseFloat(x.order); return isNaN(n)?999999:n; }
-  if(f==='ALL'){ show=show.slice().sort(function(a,b){ var ca=catRank(a.category), cb=catRank(b.category); if(ca!==cb) return ca-cb; var oa=ordOf(a), ob=ordOf(b); if(oa!==ob) return oa-ob; return 0; }); }
+  function hasOrd(x){ return ordOf(x)!==999999; }
+  if(f==='ALL'){ show=show.slice().sort(function(a,b){ var ha=hasOrd(a), hb=hasOrd(b); if(ha!==hb) return ha? -1:1; if(ha&&hb) return ordOf(a)-ordOf(b); var ca=catRank(a.category), cb=catRank(b.category); if(ca!==cb) return ca-cb; return 0; }); }
   else { show=show.slice().sort(function(a,b){ return ordOf(a)-ordOf(b); }); }
   document.getElementById('count').textContent=show.length+' PRODUCTS • '+f;
   show.forEach(function(p){
